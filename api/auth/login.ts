@@ -74,7 +74,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             user: userWithoutPassword
         });
     } catch (err: any) {
-        console.error('Flexible login error:', err);
-        return res.status(500).json({ message: 'Internal server error', error: err.message });
+        console.error('Flexible login error full detail:', err);
+        return res.status(500).json({
+            message: 'Internal server error',
+            error: err.message,
+            detail: err.detail || err.hint || 'No extra detail'
+        });
     }
 }
