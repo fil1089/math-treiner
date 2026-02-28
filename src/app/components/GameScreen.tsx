@@ -534,18 +534,20 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
       {/* ══════════════════════════════════════════════════
           CHARACTER — fills remaining space
       ══════════════════════════════════════════════════ */}
-      <div className="flex-1 flex items-center justify-center min-h-0">
+      <div className="flex-1 flex items-center justify-center min-h-0 relative">
         <motion.div
-          animate={{ y: [0, -14, 0] }}
+          animate={{ y: [0, -10, 0] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
         >
-          <CharacterSVG size={190} />
+          <div style={{ maxHeight: "100%", maxWidth: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <CharacterSVG size="min(190px, 28vh)" />
+          </div>
           {/* Shadow */}
           <motion.div
             animate={{ scaleX: [1, 0.75, 1], opacity: [0.35, 0.15, 0.35] }}
             transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-            style={{ width: 100, height: 14, background: "radial-gradient(ellipse, rgba(60,140,150,0.4) 0%, transparent 75%)", borderRadius: "50%", marginTop: -6 }}
+            style={{ width: "min(100px, 15vh)", height: "min(14px, 2vh)", background: "radial-gradient(ellipse, rgba(60,140,150,0.4) 0%, transparent 75%)", borderRadius: "50%", marginTop: -6 }}
           />
         </motion.div>
       </div>
