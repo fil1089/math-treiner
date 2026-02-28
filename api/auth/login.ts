@@ -21,6 +21,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const sql = await getDb();
 
+        // Diagnostic: Check if columns exist
+        const columns = await sql`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'users'
+        `;
+        const colNames = columns.map((c: any) => c.column_name);
+        console.log('Available columns in users table:', colNames);
+
+        if (!colNames.includes('phone') || !colNames.includes('email') || !colNames.includes('username')) {
+            return res.status(500).json({
+                message: 'Database schema mismatch',
+                error: `Missing columns. Found: ${colNames.join(', ')}`,
+                hint: 'Please run update_db.sql in your Neon SQL Editor.'
+            });
+        }
+
         // Attempt to find user by email, phone, or username
         let user = await sql`
       SELECT * FROM users 
