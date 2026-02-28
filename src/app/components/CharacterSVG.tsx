@@ -4,7 +4,11 @@ export function CharacterSVG({ size = 220, mood = "happy" }: { size?: number | s
   const h = 676;
 
   return (
-    <div style={{ width: size, aspectRatio: `${w}/${h}` }}>
+    <div style={
+      size === "100%"
+        ? { height: "100%", maxHeight: "190px", aspectRatio: `${w}/${h}`, margin: "0 auto" }
+        : { width: size, aspectRatio: `${w}/${h}`, margin: "0 auto" }
+    }>
       <svg
         width="100%"
         height="100%"
