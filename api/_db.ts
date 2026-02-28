@@ -1,14 +1,13 @@
 import { neon } from '@neondatabase/serverless';
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
-if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not set');
-}
-
-const sql = neon(process.env.DATABASE_URL);
+import { VercelResponse } from '@vercel/node';
 
 export async function getDb() {
-    return sql;
+    // Priority: DATABASE_URL_NEW (New project), then DATABASE_URL (Old project)
+    const url = process.env.DATABASE_URL_NEW || process.env.DATABASE_URL;
+    if (!url) {
+        throw new Error('Database connection URL not found (DATABASE_URL_NEW or DATABASE_URL)');
+    }
+    return neon(url);
 }
 
 // CORS Helper for Vercel
