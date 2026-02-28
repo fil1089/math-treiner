@@ -5,6 +5,7 @@ import { LevitatingCharacter } from "./LevitatingCharacter";
 import { FloatingSymbols } from "./FloatingSymbols";
 import { AvatarIcon } from "./AvatarIcon";
 import { AvatarPicker } from "./AvatarPicker";
+import { SignInButton, SignOutButton } from "@clerk/clerk-react";
 
 const C = {
   purple: "#6272A4",
@@ -257,13 +258,15 @@ export function ProfileScreen({
 
           {/* Login / Logout */}
           {!isLoggedIn ? (
-            <ActionButton
-              icon={<LogIn size={18} strokeWidth={2.5} />}
-              label="Войти в аккаунт"
-              sublabel="Сохраняй прогресс в облаке"
-              color={C.teal}
-              onClick={onLogin}
-            />
+            <SignInButton mode="modal">
+              <ActionButton
+                icon={<LogIn size={18} strokeWidth={2.5} />}
+                label="Войти в аккаунт"
+                sublabel="Сохраняй прогресс в облаке"
+                color={C.teal}
+                onClick={() => { }} // Handled by SignInButton
+              />
+            </SignInButton>
           ) : (
             <>
               {!showLogoutConfirm ? (
@@ -277,9 +280,13 @@ export function ProfileScreen({
               ) : (
                 <ConfirmCard
                   text="Точно хочешь выйти из аккаунта?"
-                  onConfirm={() => { onLogout(); setShowLogoutConfirm(false); }}
+                  onConfirm={() => { }} // Handled by SignOutButton wrapper below
                   onCancel={() => setShowLogoutConfirm(false)}
-                  confirmLabel="Выйти"
+                  confirmLabel={
+                    <SignOutButton>
+                      <span className="w-full text-center">Выйти</span>
+                    </SignOutButton>
+                  }
                   confirmColor="#E85D5D"
                 />
               )}
@@ -363,7 +370,7 @@ function ConfirmCard({
   text: string;
   onConfirm: () => void;
   onCancel: () => void;
-  confirmLabel: string;
+  confirmLabel: React.ReactNode;
   confirmColor: string;
 }) {
   return (
