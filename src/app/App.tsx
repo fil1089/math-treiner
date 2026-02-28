@@ -1,31 +1,24 @@
 import { useState, useCallback, useEffect } from "react";
-import { 
-  SignedIn, 
-  SignedOut, 
-  SignInButton, 
-  UserButton, 
-  useUser,
-  useAuth
-} from "@clerk/clerk-react";
+import { useAuth } from "../context/AuthContext";
 import { MenuScreen } from "./components/MenuScreen";
 import { AchievementsScreen } from "./components/AchievementsScreen";
 import { ProfileScreen } from "./components/ProfileScreen";
 import { LevelSelectScreen } from "./components/LevelSelectScreen";
 import { GameScreen } from "./components/GameScreen";
+import { AuthPage } from "./components/AuthPage";
 import { AchievementToast } from "./components/AchievementToast";
 import { useGameStats } from "./hooks/useGameStats";
 import { getSkillLevel } from "./utils/skillLevels";
 
-type Screen = "menu" | "levelSelect" | "achievements" | "profile" | "game";
+type Screen = "menu" | "levelSelect" | "achievements" | "profile" | "game" | "auth";
 
 const LEVEL_NAMES: Record<number, string> = {
   1: "База", 2: "Легко", 3: "Средне", 4: "Тяжело", 5: "Эксперт", 6: "Гений",
 };
 
 export default function App() {
-  const { isLoaded, userId } = useAuth();
-  const { user } = useUser();
-  const [screen, setScreen]         = useState<Screen>("menu");
+  const { user, logout } = useAuth();
+  const [screen, setScreen] = useState<Screen>("menu");
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [selectedRange, setSelectedRange] = useState(9);
 
@@ -35,7 +28,7 @@ export default function App() {
   const [gameKey, setGameKey] = useState(0);
 
   // Toast queue
-  const [toastId, setToastId]       = useState<number | null>(null);
+  const [toastId, setToastId] = useState<number | null>(null);
   const [toastQueue, setToastQueue] = useState<number[]>([]);
 
   useEffect(() => {
@@ -147,17 +140,21 @@ export default function App() {
         {screen === "profile" && (
           <ProfileScreen
             onBack={() => setScreen("menu")}
-            playerName={user?.firstName || stats.playerName}
-            isLoggedIn={!!userId}
-            onNameChange={updatePlayerName}
-            onLogin={() => {}} // Controlled by Clerk buttons now
-            onLogout={() => {}} // Controlled by Clerk buttons now
+            playerName={user?.username || stats.playerName}
+            isLoggedIn={!!user}
+            onNameChange={() => { }} // Name change will be via profile soon
+            onLogin={() => setScreen("auth")}
+            onLogout={logout}
             onReset={handleReset}
-            totalStars={unlockedCount}
+            totalStars={user?.total_score || unlockedCount}
             totalAchievements={9}
-            avatarId={stats.avatarId}
+            avatarId={user?.avatar_id || stats.avatarId}
             onAvatarChange={updateAvatarId}
           />
+        )}
+
+        {screen === "auth" && (
+          <AuthPage onBack={() => setScreen("profile")} />
         )}
 
         {/* Global achievement toast */}

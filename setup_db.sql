@@ -1,7 +1,9 @@
 -- Run this script in your Neon SQL Editor to initialize the database
 
 CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY, -- This will store the Clerk User ID
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
   username TEXT,
   total_score INTEGER DEFAULT 0,
   level TEXT DEFAULT 'Новичок',
