@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Lock, User, LogIn, UserPlus, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
+import { motion } from 'motion/react';
+import { User, LogIn, ArrowLeft, Loader2, AlertCircle, Hash, Mail } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface AuthPageProps {
@@ -15,10 +15,7 @@ const C = {
 };
 
 export function AuthPage({ onBack }: AuthPageProps) {
-    const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [username, setUsername] = useState('');
+    const [identifier, setIdentifier] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -29,35 +26,32 @@ export function AuthPage({ onBack }: AuthPageProps) {
         setError(null);
         setIsLoading(true);
 
-        const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-        const body = isLogin ? { email, password } : { email, password, username };
-
         try {
-            const res = await fetch(endpoint, {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
+                body: JSON.stringify({ identifier }),
             });
 
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.message || 'Something went wrong');
+                throw new Error(data.message || 'Что-то пошло не так');
             }
 
-            if (isLogin) {
-                saveAuth(data.token, data.user);
-                onBack();
-            } else {
-                // Switch to login after successful registration
-                setIsLogin(true);
-                setError('Регистрация прошла успешно! Теперь войдите.');
-            }
+            saveAuth(data.token, data.user);
+            onBack();
         } catch (err: any) {
             setError(err.message);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const getIcon = () => {
+        if (identifier.includes('@')) return <Mail size={16} />;
+        if (/^\+?\d+$/.test(identifier.replace(/[\s-]/g, ''))) return <Hash size={16} />;
+        return <User size={16} />;
     };
 
     return (
@@ -74,7 +68,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
                     <ArrowLeft size={18} color="white" strokeWidth={3} />
                 </button>
                 <h1 className="m-0" style={{ fontSize: 24, fontWeight: 900, color: C.purple }}>
-                    {isLogin ? 'Вход' : 'Регистрация'}
+                    Вход
                 </h1>
             </div>
 
@@ -85,52 +79,24 @@ export function AuthPage({ onBack }: AuthPageProps) {
                     className="rounded-3xl p-6"
                     style={{ background: "#E0E5EC", boxShadow: "20px 20px 60px #bec3ca, -20px -20px 60px #fdffff" }}
                 >
+                    <p className="m-0 mb-6 text-center" style={{ fontSize: 13, fontWeight: 700, color: "#8A929E" }}>
+                        Введите почту, телефон или уникальный никнейм. Аккаунт создастся автоматически.
+                    </p>
+
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-                        {!isLogin && (
-                            <div className="flex flex-col gap-1">
-                                <label style={{ fontSize: 13, fontWeight: 800, color: C.purple, marginLeft: 4 }}>Имя пользователя</label>
-                                <div className="relative">
-                                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        required={!isLogin}
-                                        placeholder="Напр. Математик2000"
-                                        className="w-full rounded-2xl py-3 pl-10 pr-4 outline-none border-none text-[15px] font-bold"
-                                        style={{ background: "#E0E5EC", boxShadow: "inset 6px 6px 12px #bec3ca, inset -6px -6px 12px #fdffff" }}
-                                    />
+                        <div className="flex flex-col gap-1">
+                            <label style={{ fontSize: 13, fontWeight: 800, color: C.purple, marginLeft: 4 }}>Кто ты?</label>
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    {getIcon()}
                                 </div>
-                            </div>
-                        )}
-
-                        <div className="flex flex-col gap-1">
-                            <label style={{ fontSize: 13, fontWeight: 800, color: C.purple, marginLeft: 4 }}>Email</label>
-                            <div className="relative">
-                                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    type="text"
+                                    value={identifier}
+                                    onChange={(e) => setIdentifier(e.target.value)}
                                     required
-                                    placeholder="example@mail.com"
-                                    className="w-full rounded-2xl py-3 pl-10 pr-4 outline-none border-none text-[15px] font-bold"
-                                    style={{ background: "#E0E5EC", boxShadow: "inset 6px 6px 12px #bec3ca, inset -6px -6px 12px #fdffff" }}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                            <label style={{ fontSize: 13, fontWeight: 800, color: C.purple, marginLeft: 4 }}>Пароль</label>
-                            <div className="relative">
-                                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    placeholder="••••••••"
+                                    placeholder="Email, телефон или ник"
                                     className="w-full rounded-2xl py-3 pl-10 pr-4 outline-none border-none text-[15px] font-bold"
                                     style={{ background: "#E0E5EC", boxShadow: "inset 6px 6px 12px #bec3ca, inset -6px -6px 12px #fdffff" }}
                                 />
@@ -146,8 +112,8 @@ export function AuthPage({ onBack }: AuthPageProps) {
 
                         <button
                             type="submit"
-                            disabled={isLoading}
-                            className="w-full rounded-2xl py-4 mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-70"
+                            disabled={isLoading || !identifier.trim()}
+                            className="w-full rounded-2xl py-4 mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50"
                             style={{
                                 background: C.orange,
                                 color: 'white',
@@ -157,20 +123,11 @@ export function AuthPage({ onBack }: AuthPageProps) {
                                 boxShadow: "0 6px 20px rgba(216,114,51,0.4)"
                             }}
                         >
-                            {isLoading ? <Loader2 size={18} className="animate-spin" /> : (isLogin ? <LogIn size={18} strokeWidth={3} /> : <UserPlus size={18} strokeWidth={3} />)}
-                            {isLogin ? 'Войти' : 'Создать аккаунт'}
+                            {isLoading ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} strokeWidth={3} />}
+                            Войти в игру
                         </button>
                     </form>
 
-                    <div className="mt-8 text-center">
-                        <button
-                            onClick={() => setIsLogin(!isLogin)}
-                            className="bg-transparent border-none outline-none"
-                            style={{ fontSize: 13, fontWeight: 800, color: C.purple, cursor: 'pointer', textDecoration: 'underline' }}
-                        >
-                            {isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
-                        </button>
-                    </div>
                 </motion.div>
             </div>
         </div>

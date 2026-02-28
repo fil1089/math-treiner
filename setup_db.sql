@@ -2,9 +2,10 @@
 
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
-  username TEXT,
+  email TEXT UNIQUE,
+  phone TEXT UNIQUE,
+  username TEXT UNIQUE,
+  password TEXT, -- No longer strictly required
   total_score INTEGER DEFAULT 0,
   level TEXT DEFAULT 'Новичок',
   avatar_id INTEGER DEFAULT 1,

@@ -1,6 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { getDb, setCors } from '../_db.js';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
@@ -13,32 +12,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const { email, password } = req.body;
+    const { identifier } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password required' });
+    if (!identifier) {
+        return res.status(400).json({ message: 'Email, phone or nickname required' });
     }
 
     try {
         const sql = await getDb();
 
-        const user = await sql`SELECT * FROM users WHERE email = ${email}`;
+        // Attempt to find user by email, phone, or username
+        let user = await sql`
+      SELECT * FROM users 
+      WHERE email = ${identifier} 
+         OR phone = ${identifier} 
+         OR username = ${identifier}
+    `;
+
         if (user.length === 0) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            // Auto-register new user
+            let email: string | null = null;
+            let phone: string | null = null;
+            let username: string | null = null;
+
+            if (identifier.includes('@')) {
+                email = identifier;
+                username = identifier.split('@')[0];
+            } else if (/^\+?[\d\s-]{7,}$/.test(identifier)) {
+                phone = identifier.replace(/[^\d+]/g, '');
+                username = `User_${phone.slice(-4)}`;
+            } else {
+                username = identifier;
+            }
+
+            // Check for username conflicts
+            const existingName = await sql`SELECT id FROM users WHERE username = ${username}`;
+            if (existingName.length > 0) {
+                username = `${username}_${Math.floor(Math.random() * 1000)}`;
+            }
+
+            const newUser = await sql`
+        INSERT INTO users (email, phone, username)
+        VALUES (${email}, ${phone}, ${username})
+        RETURNING *
+      `;
+            user = newUser;
         }
 
-        const validPassword = await bcrypt.compare(password, user[0].password);
-        if (!validPassword) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        // Exclude password from the user object in the response
+        // Exclude password if it exists
         const { password: _, ...userWithoutPassword } = user[0];
 
         const token = jwt.sign(
-            { userId: user[0].id, email: user[0].email },
+            { userId: user[0].id, username: user[0].username },
             JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '30d' }
         );
 
         return res.status(200).json({
@@ -47,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             user: userWithoutPassword
         });
     } catch (err: any) {
-        console.error('Login error:', err);
+        console.error('Flexible login error:', err);
         return res.status(500).json({ message: 'Internal server error', error: err.message });
     }
 }
