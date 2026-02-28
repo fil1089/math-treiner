@@ -1,4 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
+import { 
+  SignedIn, 
+  SignedOut, 
+  SignInButton, 
+  UserButton, 
+  useUser,
+  useAuth
+} from "@clerk/clerk-react";
 import { MenuScreen } from "./components/MenuScreen";
 import { AchievementsScreen } from "./components/AchievementsScreen";
 import { ProfileScreen } from "./components/ProfileScreen";
@@ -15,8 +23,9 @@ const LEVEL_NAMES: Record<number, string> = {
 };
 
 export default function App() {
+  const { isLoaded, userId } = useAuth();
+  const { user } = useUser();
   const [screen, setScreen]         = useState<Screen>("menu");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [selectedRange, setSelectedRange] = useState(9);
 
@@ -138,11 +147,11 @@ export default function App() {
         {screen === "profile" && (
           <ProfileScreen
             onBack={() => setScreen("menu")}
-            playerName={stats.playerName}
-            isLoggedIn={isLoggedIn}
+            playerName={user?.firstName || stats.playerName}
+            isLoggedIn={!!userId}
             onNameChange={updatePlayerName}
-            onLogin={() => setIsLoggedIn(true)}
-            onLogout={() => setIsLoggedIn(false)}
+            onLogin={() => {}} // Controlled by Clerk buttons now
+            onLogout={() => {}} // Controlled by Clerk buttons now
             onReset={handleReset}
             totalStars={unlockedCount}
             totalAchievements={9}

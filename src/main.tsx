@@ -1,7 +1,17 @@
+import { ClerkProvider } from "@clerk/clerk-react";
+import { createRoot } from "react-dom/client";
+import App from "./app/App.tsx";
+import "./styles/index.css";
 
-  import { createRoot } from "react-dom/client";
-  import App from "./app/App.tsx";
-  import "./styles/index.css";
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
-  createRoot(document.getElementById("root")!).render(<App />);
-  
+if (!PUBLISHABLE_KEY) {
+  // We'll let the user know they need to add this to .env
+  console.warn("Missing VITE_CLERK_PUBLISHABLE_KEY in environment variables");
+}
+
+createRoot(document.getElementById("root")!).render(
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY || ""} afterSignOutUrl="/">
+    <App />
+  </ClerkProvider>
+);
