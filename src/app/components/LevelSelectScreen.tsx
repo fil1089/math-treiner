@@ -21,12 +21,12 @@ interface LevelConfig {
 }
 
 const levels: LevelConfig[] = [
-  { id: 1, label: "Уровень 1", name: "База",    stars: 1, color: C.teal,   shadow: "rgba(92,167,173,0.45)",  ranges: [],                   rangeLabel: "" },
-  { id: 2, label: "Уровень 2", name: "Легко",   stars: 2, color: C.teal,   shadow: "rgba(92,167,173,0.45)",  ranges: [10,15,20,30,50,99],  rangeLabel: "до" },
-  { id: 3, label: "Уровень 3", name: "Средне",  stars: 3, color: C.teal,   shadow: "rgba(92,167,173,0.45)",  ranges: [50,99],              rangeLabel: "до" },
-  { id: 4, label: "Уровень 4", name: "Тяжело",  stars: 4, color: C.teal,   shadow: "rgba(92,167,173,0.45)",  ranges: [200,500,999],        rangeLabel: "до" },
-  { id: 5, label: "Уровень 5", name: "Эксперт", stars: 5, color: C.teal,   shadow: "rgba(92,167,173,0.45)",  ranges: [200,500,999],        rangeLabel: "до" },
-  { id: 6, label: "Уровень 6", name: "Гений",   stars: 5, color: C.orange, shadow: "rgba(216,114,51,0.50)",  ranges: [2000,5000,9999],     rangeLabel: "до" },
+  { id: 1, label: "Уровень 1", name: "База", stars: 1, color: C.teal, shadow: "rgba(92,167,173,0.45)", ranges: [], rangeLabel: "" },
+  { id: 2, label: "Уровень 2", name: "Легко", stars: 2, color: C.teal, shadow: "rgba(92,167,173,0.45)", ranges: [10, 15, 20, 30, 50, 99], rangeLabel: "до" },
+  { id: 3, label: "Уровень 3", name: "Средне", stars: 3, color: C.teal, shadow: "rgba(92,167,173,0.45)", ranges: [50, 99], rangeLabel: "до" },
+  { id: 4, label: "Уровень 4", name: "Тяжело", stars: 4, color: C.teal, shadow: "rgba(92,167,173,0.45)", ranges: [200, 500, 999], rangeLabel: "до" },
+  { id: 5, label: "Уровень 5", name: "Эксперт", stars: 5, color: C.teal, shadow: "rgba(92,167,173,0.45)", ranges: [200, 500, 999], rangeLabel: "до" },
+  { id: 6, label: "Уровень 6", name: "Гений", stars: 5, color: C.orange, shadow: "rgba(216,114,51,0.50)", ranges: [2000, 5000, 9999], rangeLabel: "до" },
 ];
 
 function StarRow({ count, total = 5 }: { count: number; total?: number }) {
@@ -233,6 +233,26 @@ export function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenPr
 
                 {/* Range pills */}
                 <div className="flex flex-wrap gap-2 mb-5">
+                  {/* Option MIX representing all ranges */}
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => setSelectedRange(-1)}
+                    className="rounded-2xl px-4 py-2.5"
+                    style={{
+                      background: selectedRange === -1
+                        ? `linear-gradient(135deg, ${activeLevel.color}, ${activeLevel.color}CC)`
+                        : `${activeLevel.color}15`,
+                      border: selectedRange === -1 ? "none" : `1.5px solid ${activeLevel.color}40`,
+                      cursor: "pointer",
+                      boxShadow: selectedRange === -1 ? `0 4px 12px ${activeLevel.shadow}` : "none",
+                      transition: "all 0.18s",
+                    }}
+                  >
+                    <span style={{ fontSize: 15, fontWeight: 900, color: selectedRange === -1 ? "white" : activeLevel.color }}>
+                      Все числа (Mix)
+                    </span>
+                  </motion.button>
+
                   {activeLevel.ranges.map(r => {
                     const isSelected = selectedRange === r;
                     return (
@@ -278,7 +298,7 @@ export function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenPr
                     <path d="M5 3l14 9-14 9V3z" fill={selectedRange ? "white" : "#9AA0AA"} />
                   </svg>
                   <span style={{ fontSize: 17, fontWeight: 900, color: selectedRange ? "white" : "#9AA0AA", fontFamily: "'Nunito', sans-serif" }}>
-                    {selectedRange ? `Играть (до ${selectedRange.toLocaleString("ru")})` : "Выбери диапазон"}
+                    {selectedRange ? (selectedRange === -1 ? "Играть (Mix)" : `Играть (до ${selectedRange.toLocaleString("ru")})`) : "Выбери диапазон"}
                   </span>
                 </motion.button>
               </div>

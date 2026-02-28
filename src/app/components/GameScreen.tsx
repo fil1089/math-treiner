@@ -9,14 +9,14 @@ const ROUND_SIZE = 5;
 
 // ─── Skill Levels ─────────────────────────────────────────
 const SKILL_LEVELS = [
-  { name: "Новичок",     minScore: 0,    color: "#9AA0AA", num: 1 },
-  { name: "Начинающий",  minScore: 50,   color: "#4CAF50", num: 2 },
-  { name: "Соображайка", minScore: 200,  color: C.teal,    num: 3 },
-  { name: "Умник",       minScore: 500,  color: C.purple,  num: 4 },
-  { name: "Мастер",      minScore: 1000, color: C.orange,  num: 5 },
-  { name: "Профи",       minScore: 2000, color: "#E85D5D", num: 6 },
-  { name: "Эксперт",     minScore: 4000, color: "#9B59B6", num: 7 },
-  { name: "Гений",       minScore: 8000, color: "#D4A017", num: 8 },
+  { name: "Новичок", minScore: 0, color: "#9AA0AA", num: 1 },
+  { name: "Начинающий", minScore: 50, color: "#4CAF50", num: 2 },
+  { name: "Соображайка", minScore: 200, color: C.teal, num: 3 },
+  { name: "Умник", minScore: 500, color: C.purple, num: 4 },
+  { name: "Мастер", minScore: 1000, color: C.orange, num: 5 },
+  { name: "Профи", minScore: 2000, color: "#E85D5D", num: 6 },
+  { name: "Эксперт", minScore: 4000, color: "#9B59B6", num: 7 },
+  { name: "Гений", minScore: 8000, color: "#D4A017", num: 8 },
 ];
 
 function getSkill(score: number) {
@@ -35,18 +35,36 @@ function getSkill(score: number) {
 // ─── Question Generator ───────────────────────────────────
 interface Question { a: number; b: number; op: "+" | "−"; result: number }
 
-function generateQuestion(levelId: number, range: number): Question {
+const LEVEL_RANGES: Record<number, number[]> = {
+  1: [],
+  2: [10, 15, 20, 30, 50, 99],
+  3: [50, 99],
+  4: [200, 500, 999],
+  5: [200, 500, 999],
+  6: [2000, 5000, 9999],
+};
+
+function generateQuestion(levelId: number, rangeInput: number): Question {
   const rand = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
+
+  let activeRange = rangeInput;
+  if (rangeInput === -1) {
+    const opts = LEVEL_RANGES[levelId];
+    if (opts && opts.length > 0) {
+      activeRange = opts[rand(0, opts.length - 1)];
+    }
+  }
+
   let a: number, b: number, op: "+" | "−";
 
   switch (levelId) {
-    case 1:  a = rand(1, 9);  b = rand(1, 9);  op = Math.random() < 0.5 ? "+" : "−"; break;
-    case 2:  a = rand(Math.max(10, Math.ceil(range * 0.4)), range); b = rand(1, 9); op = Math.random() < 0.5 ? "+" : "−"; break;
-    case 3:  a = rand(10, range); b = rand(10, Math.floor(range * 0.75)); op = Math.random() < 0.5 ? "+" : "−"; break;
-    case 4:  a = rand(100, range); b = rand(10, Math.floor(range * 0.4)); op = Math.random() < 0.5 ? "+" : "−"; break;
-    case 5:  a = rand(100, range); b = rand(50, Math.floor(range * 0.6)); op = Math.random() < 0.5 ? "+" : "−"; break;
-    case 6:  a = rand(1000, range); b = rand(100, Math.floor(range * 0.35)); op = Math.random() < 0.5 ? "+" : "−"; break;
+    case 1: a = rand(1, 9); b = rand(1, 9); op = Math.random() < 0.5 ? "+" : "−"; break;
+    case 2: a = rand(Math.max(10, Math.ceil(activeRange * 0.4)), activeRange); b = rand(1, 9); op = Math.random() < 0.5 ? "+" : "−"; break;
+    case 3: a = rand(10, activeRange); b = rand(10, Math.floor(activeRange * 0.75)); op = Math.random() < 0.5 ? "+" : "−"; break;
+    case 4: a = rand(100, activeRange); b = rand(10, Math.floor(activeRange * 0.4)); op = Math.random() < 0.5 ? "+" : "−"; break;
+    case 5: a = rand(100, activeRange); b = rand(50, Math.floor(activeRange * 0.6)); op = Math.random() < 0.5 ? "+" : "−"; break;
+    case 6: a = rand(1000, activeRange); b = rand(100, Math.floor(activeRange * 0.35)); op = Math.random() < 0.5 ? "+" : "−"; break;
     default: a = rand(1, 9); b = rand(1, 9); op = "+";
   }
   if (op === "−" && a < b) [a, b] = [b, a];
@@ -130,9 +148,9 @@ function RoundResultIcon({ correct }: { correct: number }) {
         <circle cx="26" cy="26" r="26" fill="rgba(255,210,51,0.2)" />
         {/* Rays */}
         {([
-          [26,2,26,7], [26,45,26,50], [2,26,7,26], [45,26,50,26],
-          [7,7,10.5,10.5], [41.5,7,38,10.5],
-        ] as number[][]).map(([x1,y1,x2,y2], i) => (
+          [26, 2, 26, 7], [26, 45, 26, 50], [2, 26, 7, 26], [45, 26, 50, 26],
+          [7, 7, 10.5, 10.5], [41.5, 7, 38, 10.5],
+        ] as number[][]).map(([x1, y1, x2, y2], i) => (
           <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
             stroke="#FFD233" strokeWidth="2.5" strokeLinecap="round" />
         ))}
@@ -276,16 +294,16 @@ interface GameScreenProps {
 }
 
 export function GameScreen({ levelId, levelName, range, totalScore, onBack, onScoreUpdate, onCorrectAnswer, onWrongAnswer, onRoundComplete }: GameScreenProps) {
-  const [score, setScore]             = useState(totalScore);
-  const [answer, setAnswer]           = useState("");
-  const [qIdx, setQIdx]               = useState(0);
-  const [question, setQuestion]       = useState<Question>(() => generateQuestion(levelId, range));
-  const [timer, setTimer]             = useState(0);
-  const [feedback, setFeedback]       = useState<null | "correct" | "wrong">(null);
+  const [score, setScore] = useState(totalScore);
+  const [answer, setAnswer] = useState("");
+  const [qIdx, setQIdx] = useState(0);
+  const [question, setQuestion] = useState<Question>(() => generateQuestion(levelId, range));
+  const [timer, setTimer] = useState(0);
+  const [feedback, setFeedback] = useState<null | "correct" | "wrong">(null);
   const [correctCount, setCorrectCount] = useState(0);
-  const [showRound, setShowRound]     = useState(false);
-  const [isPaused, setIsPaused]       = useState(false);
-  const [showPause, setShowPause]     = useState(false);
+  const [showRound, setShowRound] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [showPause, setShowPause] = useState(false);
   const [scoreAtStart, setScoreAtStart] = useState(totalScore);
 
   // Track whether current round has been perfect (no wrong answers)
@@ -441,8 +459,8 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
             background: feedback === "correct"
               ? "rgba(76,175,80,0.07)"
               : feedback === "wrong"
-              ? "rgba(232,93,93,0.07)"
-              : "#F7F9FC",
+                ? "rgba(232,93,93,0.07)"
+                : "#F7F9FC",
             border: `2px solid ${feedback === "correct" ? "#4CAF50" : feedback === "wrong" ? "#E85D5D" : "#EAECF3"}`,
             transition: "border-color 0.2s, background 0.2s",
           }}
@@ -502,9 +520,11 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
             <div className="rounded-lg px-2 py-0.5" style={{ background: `${C.teal}18` }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: C.teal }}>{levelName}</span>
             </div>
-            {range > 9 && (
+            {range !== 0 && range !== 9 && (
               <div className="rounded-lg px-2 py-0.5" style={{ background: `${C.orange}15` }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: C.orange }}>до {range.toLocaleString("ru")}</span>
+                <span style={{ fontSize: 10, fontWeight: 800, color: C.orange }}>
+                  {range === -1 ? "Микс" : `до ${range.toLocaleString("ru")}`}
+                </span>
               </div>
             )}
           </div>
