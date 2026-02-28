@@ -73,7 +73,11 @@ export default function App() {
   }, []);
 
   const unlockedCount = stats.unlockedAchievements.length;
-  const { current: skill } = getSkillLevel(stats.totalScore);
+  const currentTotalScore = user?.total_score ?? stats.totalScore;
+  const currentAvatarId = user?.avatar_id ?? stats.avatarId;
+  const currentName = user?.username ?? stats.playerName;
+
+  const { current: skill } = getSkillLevel(currentTotalScore);
 
   return (
     <div
@@ -88,9 +92,9 @@ export default function App() {
           <MenuScreen
             onNavigate={(s) => setScreen(s as Screen)}
             canContinue={gameStarted}
-            totalScore={stats.totalScore}
-            playerName={stats.playerName}
-            avatarId={stats.avatarId}
+            totalScore={currentTotalScore}
+            playerName={currentName}
+            avatarId={currentAvatarId}
             skillName={skill.name}
             skillColor={skill.color}
             skillNum={skill.num}
@@ -119,7 +123,7 @@ export default function App() {
               levelId={selectedLevel}
               levelName={LEVEL_NAMES[selectedLevel] ?? "Уровень"}
               range={selectedRange}
-              totalScore={stats.totalScore}
+              totalScore={currentTotalScore}
               onBack={() => setScreen("menu")}
               onScoreUpdate={updateScore}
               onCorrectAnswer={recordCorrectAnswer}
@@ -132,7 +136,7 @@ export default function App() {
         {screen === "achievements" && (
           <AchievementsScreen
             onBack={() => setScreen("menu")}
-            playerName={stats.playerName}
+            playerName={currentName}
             stats={stats}
           />
         )}
@@ -140,15 +144,15 @@ export default function App() {
         {screen === "profile" && (
           <ProfileScreen
             onBack={() => setScreen("menu")}
-            playerName={user?.username || stats.playerName}
+            playerName={currentName}
             isLoggedIn={!!user}
             onNameChange={() => { }} // Name change will be via profile soon
             onLogin={() => setScreen("auth")}
             onLogout={logout}
             onReset={handleReset}
-            totalStars={user?.total_score || unlockedCount}
-            totalAchievements={9}
-            avatarId={user?.avatar_id || stats.avatarId}
+            totalStars={currentTotalScore}
+            totalAchievements={unlockedCount}
+            avatarId={currentAvatarId}
             onAvatarChange={updateAvatarId}
           />
         )}
