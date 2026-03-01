@@ -141,68 +141,20 @@ function StatRow({ label, right }: { label: string; right: React.ReactNode }) {
 // ─── Round Result Icon ────────────────────────────────────
 function RoundResultIcon({ correct }: { correct: number }) {
   if (correct === ROUND_SIZE) {
-    // Perfect — proper 5-pointed star with rays
-    return (
-      <svg width="58" height="58" viewBox="0 0 52 52" fill="none">
-        {/* Glow circle */}
-        <circle cx="26" cy="26" r="26" fill="rgba(255,210,51,0.2)" />
-        {/* Rays */}
-        {([
-          [26, 2, 26, 7], [26, 45, 26, 50], [2, 26, 7, 26], [45, 26, 50, 26],
-          [7, 7, 10.5, 10.5], [41.5, 7, 38, 10.5],
-        ] as number[][]).map(([x1, y1, x2, y2], i) => (
-          <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
-            stroke="#FFD233" strokeWidth="2.5" strokeLinecap="round" />
-        ))}
-        {/* Mathematically correct 5-point star (outer r=17, inner r=7, center 26,26) */}
-        <path
-          d="M26,9 L30.12,20.34 L42.17,20.75 L32.66,28.16 L35.99,39.75 L26,33 L16.01,39.75 L19.34,28.16 L9.83,20.75 L21.88,20.34 Z"
-          fill="#FFD233" stroke="#D4A017" strokeWidth="1.2" strokeLinejoin="round"
-        />
-        {/* Shine highlight */}
-        <ellipse cx="22" cy="18" rx="3" ry="1.8" fill="white" opacity="0.5" transform="rotate(-25 22 18)" />
-      </svg>
-    );
+    return <img src="/icons/star-struck-svgrepo-com.svg" width="64" height="64" alt="Идеально" />;
   }
   if (correct >= 3) {
-    // Good — thumbs up
-    return (
-      <svg width="58" height="58" viewBox="0 0 52 52" fill="none">
-        <circle cx="26" cy="26" r="26" fill="rgba(255,210,51,0.15)" />
-        {/* Thumb body */}
-        <path d="M18,26 L25,11 C26.5,11 30,13 30,18 L30,22 L39,22 C41,22 43,23.5 42.5,26.5 L39.5,39 C39,41 37,42 35,42 L18,42 Z"
-          fill="#FFD233" stroke="#D4A017" strokeWidth="1.5" strokeLinejoin="round" />
-        {/* Base rectangle */}
-        <rect x="10" y="26" width="8" height="16" rx="3" fill="#E8B800" stroke="#D4A017" strokeWidth="1" />
-        {/* Shine */}
-        <ellipse cx="26" cy="16" rx="2.5" ry="4" fill="white" opacity="0.35" transform="rotate(-10 26 16)" />
-      </svg>
-    );
+    return <img src="/icons/smiling-face-with-sunglasses-svgrepo-com.svg" width="64" height="64" alt="Отлично" />;
   }
-  // Keep going — lightning bolt
-  return (
-    <svg width="58" height="58" viewBox="0 0 52 52" fill="none">
-      <circle cx="26" cy="26" r="26" fill="rgba(216,114,51,0.15)" />
-      <path d="M31,8 L14,29 L23,29 L21,44 L38,23 L29,23 L31,8 Z"
-        fill="#D87233" stroke="#B05C1A" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M31,8 L14,29 L23,29 L21,44 L38,23 L29,23 L31,8 Z"
-        fill="url(#boltG)" fillOpacity="0.4" />
-      <defs>
-        <linearGradient id="boltG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFD93D" />
-          <stop offset="100%" stopColor="transparent" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
+  return <img src="/icons/upside-down-face-svgrepo-com.svg" width="64" height="64" alt="Продолжай" />;
 }
 
 // ─── Round Complete ────────────────────────────────────────
 function RoundComplete({
-  correct, pointsEarned, totalScore, skill, onContinue, onMenu,
+  correct, pointsEarned, totalScore, skill, hasNextLevel, onContinue, onNextLevel, onMenu,
 }: {
   correct: number; pointsEarned: number; totalScore: number;
-  skill: typeof SKILL_LEVELS[0]; onContinue: () => void; onMenu: () => void;
+  skill: typeof SKILL_LEVELS[0]; hasNextLevel: boolean; onContinue: () => void; onNextLevel: () => void; onMenu: () => void;
 }) {
   const title = correct === ROUND_SIZE ? "Идеально!" : correct >= 3 ? "Отлично!" : "Продолжай!";
 
@@ -261,19 +213,33 @@ function RoundComplete({
             </div>
           } />
         </div>
-        <div className="px-5 pb-5 flex gap-3">
-          <button onClick={onMenu} className="flex-1 rounded-2xl py-3.5"
-            style={{ background: "#F2F4F8", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#6B7A8D", fontFamily: "'Nunito', sans-serif" }}>
-            В меню
-          </button>
-          <button
-            onClick={onContinue}
-            className="flex-[2] rounded-2xl py-3.5 flex items-center justify-center gap-2"
-            style={{ background: C.orange, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 900, color: "white", fontFamily: "'Nunito', sans-serif", boxShadow: `0 5px 16px ${C.orange}55` }}
-          >
-            <RefreshCcw size={16} color="white" strokeWidth={2.5} />
-            Ещё раз!
-          </button>
+        <div className="px-5 pb-5 flex flex-col gap-3">
+          {hasNextLevel && (
+            <button
+              onClick={onNextLevel}
+              className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2"
+              style={{ background: C.orange, border: "none", cursor: "pointer", fontSize: 16, fontWeight: 900, color: "white", fontFamily: "'Nunito', sans-serif", boxShadow: `0 5px 16px ${C.orange}55` }}
+            >
+              Следующий уровень
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+          <div className="flex gap-3">
+            <button onClick={onMenu} className="flex-1 rounded-2xl py-3.5"
+              style={{ background: "#F2F4F8", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#6B7A8D", fontFamily: "'Nunito', sans-serif" }}>
+              В меню
+            </button>
+            <button
+              onClick={onContinue}
+              className="flex-[2] rounded-2xl py-3.5 flex items-center justify-center gap-2"
+              style={{ background: hasNextLevel ? C.teal : C.orange, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 900, color: "white", fontFamily: "'Nunito', sans-serif", boxShadow: `0 5px 16px ${hasNextLevel ? C.teal : C.orange}55` }}
+            >
+              <RefreshCcw size={16} color="white" strokeWidth={2.5} />
+              Ещё раз!
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -291,9 +257,11 @@ interface GameScreenProps {
   onCorrectAnswer: (isQuick: boolean) => void;
   onWrongAnswer: () => void;
   onRoundComplete: (isPerfect: boolean) => void;
+  hasNextLevel: boolean;
+  onNextLevel: () => void;
 }
 
-export function GameScreen({ levelId, levelName, range, totalScore, onBack, onScoreUpdate, onCorrectAnswer, onWrongAnswer, onRoundComplete }: GameScreenProps) {
+export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel, onBack, onScoreUpdate, onCorrectAnswer, onWrongAnswer, onRoundComplete, onNextLevel }: GameScreenProps) {
   const [score, setScore] = useState(totalScore);
   const [answer, setAnswer] = useState("");
   const [qIdx, setQIdx] = useState(0);
@@ -368,72 +336,46 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
           background: "white",
           borderRadius: "0 0 28px 28px",
           boxShadow: "0 6px 28px rgba(0,0,0,0.08)",
-          paddingTop: 48,
+          paddingTop: "max(20px, env(safe-area-inset-top, 20px))",
         }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => { setIsPaused(true); setShowPause(true); }}
-            className="flex items-center gap-2 rounded-2xl px-4 py-2.5 active:scale-95 transition-transform"
-            style={{ background: "#F0F3F9", border: "none", cursor: "pointer", color: "#3A4050", boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}
-          >
-            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-              <rect width="16" height="2" rx="1" fill="#3A4050" />
-              <rect y="5" width="16" height="2" rx="1" fill="#3A4050" />
-              <rect y="10" width="16" height="2" rx="1" fill="#3A4050" />
-            </svg>
-            <span style={{ fontSize: 14, fontWeight: 800 }}>Меню</span>
-          </button>
+        {/* Compact Header: Progress | Pause */}
+        <div className="flex items-center justify-between mb-4 gap-4">
 
-          <button
-            onClick={() => { setIsPaused(true); setShowPause(true); }}
-            className="w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-            style={{ background: C.teal, boxShadow: `0 4px 14px ${C.teal}60`, border: "none", cursor: "pointer" }}
-          >
-            <Pause size={18} fill="white" color="white" />
-          </button>
-        </div>
-
-        {/* Skill + Points */}
-        <div className="flex items-start justify-between mb-2">
-          {/* Skill level */}
-          <div>
-            <p className="m-0 mb-0.5" style={{ fontSize: 11, color: "#9AA0AA", fontWeight: 700 }}>Уровень навыка:</p>
-            <div className="flex items-center gap-2">
-              <span style={{ fontSize: 22, fontWeight: 900, color: skill.color }}>{skill.name}</span>
-              <StarBadge num={skill.num} color={skill.color} />
-            </div>
-          </div>
-
-          {/* Points */}
-          <div className="text-right">
-            <p className="m-0 mb-0.5" style={{ fontSize: 11, color: "#9AA0AA", fontWeight: 700 }}>Очки:</p>
-            <div className="flex items-center gap-1.5 justify-end">
-              <Zap size={18} color={C.orange} fill={C.orange} />
-              <span style={{ fontSize: 22, fontWeight: 900, color: "#2E3545" }}>{score.toLocaleString("ru")}</span>
-              <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "#4CAF50" }}>
-                <Plus size={10} color="white" strokeWidth={3.5} />
+          {/* Progress Center (Now spans more width) */}
+          <div className="flex-1 flex flex-col items-stretch">
+            <div className="flex items-center justify-between w-full mb-1.5 px-1">
+              {/* Skill */}
+              <div className="flex items-center gap-1.5">
+                <StarBadge num={skill.num} color={skill.color} />
+                <span style={{ fontSize: 16, fontWeight: 900, color: skill.color }}>{skill.name}</span>
+              </div>
+              {/* Points */}
+              <div className="flex items-center gap-1">
+                <span style={{ fontSize: 17, fontWeight: 900, color: "#2E3545" }}>{score.toLocaleString("ru")}</span>
+                <Zap size={16} color={C.orange} fill={C.orange} />
               </div>
             </div>
+            {/* Wider Progress bar */}
+            <div className="w-full rounded-full overflow-hidden relative" style={{ height: 8, background: "#EEF1F7" }}>
+              <motion.div
+                className="h-full rounded-full absolute left-0 top-0"
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.5 }}
+                style={{ background: skill.color }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Progress bar */}
-        <div className="w-full rounded-full overflow-hidden" style={{ height: 7, background: "#EEF1F7" }}>
-          <motion.div
-            className="h-full rounded-full"
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.5 }}
-            style={{ background: skill.color }}
-          />
+          {/* PAUSE */}
+          <button
+            onClick={() => { setIsPaused(true); setShowPause(true); }}
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+            style={{ background: C.teal, boxShadow: `0 4px 14px ${C.teal}60`, border: "none", cursor: "pointer" }}
+          >
+            <Pause size={16} fill="white" color="white" />
+          </button>
         </div>
-        {nextSkill && (
-          <p className="m-0 mt-1 text-center" style={{ fontSize: 10, color: "#B0B6C4", fontWeight: 700 }}>
-            {score.toLocaleString("ru")} / {nextSkill.minScore.toLocaleString("ru")}
-          </p>
-        )}
-
         {/* Expression */}
         <AnimatePresence mode="wait">
           <motion.p
@@ -501,22 +443,52 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
           )}
         </motion.div>
 
-        {/* Progress dots */}
-        <div className="flex items-center gap-2">
-          {Array.from({ length: ROUND_SIZE }).map((_, i) => (
-            <motion.div
-              key={i}
-              animate={{
-                width: i === qIdx ? 22 : 9,
-                background: i < qIdx ? C.teal : i === qIdx ? C.orange : "#D8DCE9",
-              }}
-              transition={{ duration: 0.22 }}
-              className="rounded-full"
-              style={{ height: 9, flexShrink: 0 }}
-            />
-          ))}
+        {/* Bottom Row: Dots | Timer | Level Info */}
+        <div className="flex items-center justify-between mt-2 pt-1">
+          {/* Left side group: Dots + Timer */}
+          <div className="flex items-center gap-4 flex-1">
+            {/* Dots */}
+            <div className="flex items-center gap-2">
+              {Array.from({ length: ROUND_SIZE }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  animate={{
+                    width: i === qIdx ? 22 : 9,
+                    background: i < qIdx ? C.teal : i === qIdx ? C.orange : "#D8DCE9",
+                  }}
+                  transition={{ duration: 0.22 }}
+                  className="rounded-full"
+                  style={{ height: 9, flexShrink: 0 }}
+                />
+              ))}
+            </div>
+
+            {/* Timer (shifted left) */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-xl" style={{ background: timerDanger ? `${C.orange}15` : "transparent" }}>
+              {timerDanger && (
+                <motion.div
+                  animate={{ opacity: [1, 0.2, 1] }}
+                  transition={{ duration: 0.65, repeat: Infinity }}
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ background: "#E85D5D" }}
+                />
+              )}
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  color: timerDanger ? "#E85D5D" : "#B0B6C4",
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: 1,
+                }}
+              >
+                {fmtTime(timer)}
+              </span>
+            </div>
+          </div>
+
           {/* Level chip */}
-          <div className="ml-auto flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-1 justify-end">
             <div className="rounded-lg px-2 py-0.5" style={{ background: `${C.teal}18` }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: C.teal }}>{levelName}</span>
             </div>
@@ -536,11 +508,11 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
       ══════════════════════════════════════════════════ */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative py-2">
         <motion.div
-          animate={{ y: [0, -6, 0] }}
+          animate={{ y: [0, -8, 0] }}
           transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-full h-full flex flex-col items-center justify-center pointer-events-none"
+          className="w-full h-full flex flex-col items-center justify-center pointer-events-none p-4"
         >
-          <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+          <div className="flex-1 min-h-0 flex items-center justify-center w-full" style={{ maxHeight: "35vh", transform: "scale(1.15)" }}>
             <CharacterSVG size="100%" />
           </div>
           {/* Shadow */}
@@ -562,7 +534,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
       {/* ══════════════════════════════════════════════════
           NUMPAD
       ══════════════════════════════════════════════════ */}
-      <div className="flex-shrink-0 px-4">
+      <div className="flex-shrink-0 px-4" style={{ paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}>
         <div
           className="grid gap-2.5"
           style={{ gridTemplateColumns: "repeat(5, 1fr) 1.15fr" }}
@@ -578,41 +550,6 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
             <NumKey key={d} label={d} onClick={() => pushDigit(d)} />
           ))}
           <NumKey label="OK" onClick={handleOK} accent={C.teal} />
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════
-          TIMER
-      ══════════════════════════════════════════════════ */}
-      <div className="flex-shrink-0 flex justify-center items-center" style={{ paddingTop: 10, paddingBottom: "max(20px, env(safe-area-inset-bottom, 20px))" }}>
-        <div className="flex items-center gap-2">
-          {timerDanger && (
-            <motion.div
-              animate={{ opacity: [1, 0.2, 1] }}
-              transition={{ duration: 0.65, repeat: Infinity }}
-              className="w-2 h-2 rounded-full"
-              style={{ background: "#E85D5D" }}
-            />
-          )}
-          <span
-            style={{
-              fontSize: 22,
-              fontWeight: 900,
-              color: timerDanger ? "#E85D5D" : "#B0B6C4",
-              fontVariantNumeric: "tabular-nums",
-              letterSpacing: 2,
-            }}
-          >
-            {fmtTime(timer)}
-          </span>
-          {timerDanger && (
-            <motion.div
-              animate={{ opacity: [1, 0.2, 1] }}
-              transition={{ duration: 0.65, repeat: Infinity, delay: 0.15 }}
-              className="w-2 h-2 rounded-full"
-              style={{ background: "#E85D5D" }}
-            />
-          )}
         </div>
       </div>
 
@@ -677,7 +614,9 @@ export function GameScreen({ levelId, levelName, range, totalScore, onBack, onSc
             pointsEarned={score - scoreAtStart}
             totalScore={score}
             skill={skill}
+            hasNextLevel={hasNextLevel}
             onContinue={handleNewRound}
+            onNextLevel={onNextLevel}
             onMenu={onBack}
           />
         )}

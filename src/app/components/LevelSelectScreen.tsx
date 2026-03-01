@@ -74,7 +74,7 @@ export function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenPr
 
   return (
     <div
-      className="flex flex-col min-h-screen w-full relative overflow-hidden"
+      className="flex flex-col min-h-[100dvh] w-full relative overflow-hidden"
       style={{
         background: "radial-gradient(ellipse at 50% 0%, #D8DDE6 0%, #CDD2DA 70%)",
         fontFamily: "'Nunito', sans-serif",

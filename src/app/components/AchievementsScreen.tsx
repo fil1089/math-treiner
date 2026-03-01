@@ -180,9 +180,9 @@ const achievements: Achievement[] = [
 const CATEGORY_ORDER: Category[] = ["progress", "skill", "levels"];
 
 const filterTabs = [
-  { key: "all",      label: "Все" },
+  { key: "all", label: "Все" },
   { key: "unlocked", label: "Получены" },
-  { key: "locked",   label: "В процессе" },
+  { key: "locked", label: "В процессе" },
 ];
 
 // ─── StarRow ──────────────────────────────────────────────
@@ -369,7 +369,7 @@ export function AchievementsScreen({
 
   const filtered = dynamicAchievements.filter(a => {
     if (activeFilter === "unlocked") return a.unlocked;
-    if (activeFilter === "locked")   return !a.unlocked;
+    if (activeFilter === "locked") return !a.unlocked;
     return true;
   });
 
@@ -382,7 +382,7 @@ export function AchievementsScreen({
 
   return (
     <div
-      className="flex flex-col min-h-screen w-full relative overflow-hidden"
+      className="flex flex-col min-h-[100dvh] w-full relative overflow-hidden"
       style={{ background: C.bg, fontFamily: "'Nunito', sans-serif" }}
     >
       <FloatingSymbols variant="achievements" opacity={0.13} />

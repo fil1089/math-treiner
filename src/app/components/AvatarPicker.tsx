@@ -98,19 +98,6 @@ export function AvatarPicker({ visible, currentId, onSelect, onClose }: AvatarPi
                           </motion.div>
                         )}
                       </div>
-                      {/* Label */}
-                      <span
-                        style={{
-                          fontSize: 8.5,
-                          fontWeight: 800,
-                          color: isSelected ? C.teal : "#9AA0AA",
-                          fontFamily: "'Nunito', sans-serif",
-                          lineHeight: 1,
-                          textAlign: "center",
-                        }}
-                      >
-                        {av.label}
-                      </span>
                     </motion.button>
                   );
                 })}

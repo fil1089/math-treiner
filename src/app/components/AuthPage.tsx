@@ -55,7 +55,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
     };
 
     return (
-        <div className="flex flex-col min-h-screen w-full relative overflow-hidden"
+        <div className="flex flex-col min-h-[100dvh] w-full relative overflow-hidden"
             style={{ background: "#CDD2DA", fontFamily: "'Nunito', sans-serif" }}>
 
             {/* Header */}

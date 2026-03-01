@@ -17,7 +17,7 @@ const LEVEL_NAMES: Record<number, string> = {
 };
 
 export default function App() {
-  const { user, logout } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const [screen, setScreen] = useState<Screen>("menu");
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [selectedRange, setSelectedRange] = useState(9);
@@ -62,6 +62,12 @@ export default function App() {
     setScreen("game");
   };
 
+  const handleNextLevel = () => {
+    if (selectedLevel < 6) {
+      handleSelectLevel(selectedLevel + 1, -1); // Use mix range (-1) for automatically started next levels
+    }
+  };
+
   const handleReset = () => {
     resetStats();
     setGameStarted(false);
@@ -77,6 +83,44 @@ export default function App() {
   const currentAvatarId = user?.avatar_id ?? stats.avatarId;
   const currentName = user?.username ?? stats.playerName;
 
+  const handleAvatarChange = async (id: number) => {
+    updateAvatarId(id); // update local
+    if (user && token) {
+      updateUser({ avatar_id: id }); // optimistic update
+      try {
+        await fetch('/api/auth/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ avatar_id: id })
+        });
+      } catch (err) {
+        console.error("Failed to update avatar on server", err);
+      }
+    }
+  };
+
+  const handleNameChange = async (name: string) => {
+    updatePlayerName(name); // update local
+    if (user && token) {
+      updateUser({ username: name }); // optimistic update
+      try {
+        await fetch('/api/auth/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ username: name })
+        });
+      } catch (err) {
+        console.error("Failed to update name on server", err);
+      }
+    }
+  };
+
   const { current: skill } = getSkillLevel(currentTotalScore);
 
   return (
@@ -85,8 +129,8 @@ export default function App() {
       style={{ background: "#B5BCC8" }}
     >
       <div
-        className="relative overflow-hidden"
-        style={{ width: "100%", maxWidth: 390, minHeight: "100dvh" }}
+        className="relative overflow-hidden flex flex-col mx-auto flex-1"
+        style={{ width: "100%", maxWidth: 600, minHeight: "100dvh", background: "#ECEFF6" }}
       >
         {screen === "menu" && (
           <MenuScreen
@@ -129,6 +173,8 @@ export default function App() {
               onCorrectAnswer={recordCorrectAnswer}
               onWrongAnswer={recordWrongAnswer}
               onRoundComplete={(isPerfect) => recordRoundComplete(selectedLevel, isPerfect)}
+              hasNextLevel={selectedLevel < 6}
+              onNextLevel={handleNextLevel}
             />
           </div>
         )}
@@ -146,14 +192,14 @@ export default function App() {
             onBack={() => setScreen("menu")}
             playerName={currentName}
             isLoggedIn={!!user}
-            onNameChange={() => { }} // Name change will be via profile soon
+            onNameChange={handleNameChange}
             onLogin={() => setScreen("auth")}
             onLogout={logout}
             onReset={handleReset}
             totalStars={currentTotalScore}
             totalAchievements={unlockedCount}
             avatarId={currentAvatarId}
-            onAvatarChange={updateAvatarId}
+            onAvatarChange={handleAvatarChange}
           />
         )}
 
