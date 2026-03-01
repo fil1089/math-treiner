@@ -20,13 +20,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
         const sql = await getDb();
 
-        const { avatar_id, username } = req.body;
+        const { avatar_id, username, total_score } = req.body;
 
         if (avatar_id !== undefined) {
             await sql`UPDATE users SET avatar_id = ${avatar_id} WHERE id = ${decoded.userId}`;
         }
         if (username !== undefined) {
             await sql`UPDATE users SET username = ${username} WHERE id = ${decoded.userId}`;
+        }
+        if (total_score !== undefined) {
+            await sql`UPDATE users SET total_score = ${total_score} WHERE id = ${decoded.userId}`;
         }
 
         const user = await sql`SELECT id, email, username, total_score, level, avatar_id FROM users WHERE id = ${decoded.userId}`;

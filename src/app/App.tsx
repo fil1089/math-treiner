@@ -121,6 +121,26 @@ export default function App() {
     }
   };
 
+  const handleScoreUpdate = async (newScore: number) => {
+    updateScore(newScore); // update local
+    if (user && token) {
+      updateUser({ total_score: newScore }); // optimistic update
+      // Optionally debounce this later if it's called too often, but right now it's called per correct answer
+      try {
+        await fetch('/api/auth/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ total_score: newScore })
+        });
+      } catch (err) {
+        console.error("Failed to update score on server", err);
+      }
+    }
+  };
+
   const { current: skill, pct, next: nextSkill } = getSkillLevel(currentTotalScore);
 
   return (
@@ -171,7 +191,7 @@ export default function App() {
               range={selectedRange}
               totalScore={currentTotalScore}
               onBack={() => setScreen("menu")}
-              onScoreUpdate={updateScore}
+              onScoreUpdate={handleScoreUpdate}
               onCorrectAnswer={recordCorrectAnswer}
               onWrongAnswer={recordWrongAnswer}
               onRoundComplete={(isPerfect) => recordRoundComplete(selectedLevel, isPerfect)}
