@@ -484,6 +484,9 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
               >
                 {fmtTime(timer)}
               </span>
+              <span style={{ fontSize: 15, fontWeight: 900, color: "#8A929E", marginLeft: 2 }}>
+                {qIdx + 1}/{ROUND_SIZE}
+              </span>
             </div>
           </div>
 

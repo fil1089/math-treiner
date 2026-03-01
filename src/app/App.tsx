@@ -121,12 +121,12 @@ export default function App() {
     }
   };
 
-  const { current: skill } = getSkillLevel(currentTotalScore);
+  const { current: skill, pct, next: nextSkill } = getSkillLevel(currentTotalScore);
 
   return (
     <div
       className="flex items-center justify-center min-h-screen w-full"
-      style={{ background: "#B5BCC8" }}
+      style={{ background: "#ECEFF6" }}
     >
       <div
         className="relative overflow-hidden flex flex-col mx-auto flex-1"
@@ -142,6 +142,8 @@ export default function App() {
             skillName={skill.name}
             skillColor={skill.color}
             skillNum={skill.num}
+            skillPct={pct}
+            nextScore={nextSkill ? nextSkill.minScore : 0}
           />
         )}
 

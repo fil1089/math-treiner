@@ -20,6 +20,8 @@ interface MenuScreenProps {
   skillName?: string;
   skillColor?: string;
   skillNum?: number;
+  skillPct?: number;
+  nextScore?: number;
 }
 
 export function MenuScreen({
@@ -31,6 +33,8 @@ export function MenuScreen({
   skillName = "Новичок",
   skillColor = "#9AA0AA",
   skillNum = 1,
+  skillPct = 0,
+  nextScore = 0,
 }: MenuScreenProps) {
   const [soundOn, setSoundOn] = useState(true);
 
@@ -89,7 +93,7 @@ export function MenuScreen({
       <div className="flex items-center justify-between px-5 pt-3 gap-2">
         <button
           onClick={() => onNavigate("profile")}
-          className="flex-1 flex items-center justify-between rounded-2xl p-2 active:scale-95 transition-transform"
+          className="flex-1 flex flex-col rounded-2xl p-2 active:scale-95 transition-transform"
           style={{
             background: "rgba(255,255,255,0.6)",
             border: "1px solid rgba(255,255,255,0.8)",
@@ -97,26 +101,42 @@ export function MenuScreen({
             cursor: "pointer"
           }}
         >
-          {/* Avatar & Name */}
-          <div className="flex items-center gap-2.5">
-            <AvatarIcon id={avatarId} size={38} borderRadius={12} showShadow={false} />
-            <div className="flex flex-col items-start pr-2">
-              <span style={{ fontSize: 13, fontWeight: 900, color: C.purple, lineHeight: 1.1 }}>
-                {playerName || "Игрок"}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 800, color: skillColor, marginTop: 1 }}>
-                {skillName}
-              </span>
+          <div className="flex items-center justify-between w-full">
+            {/* Avatar & Name */}
+            <div className="flex items-center gap-2.5">
+              <AvatarIcon id={avatarId} size={38} borderRadius={12} showShadow={false} />
+              <div className="flex flex-col items-start pr-2">
+                <span style={{ fontSize: 13, fontWeight: 900, color: C.purple, lineHeight: 1.1 }}>
+                  {playerName || "Игрок"}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: skillColor, marginTop: 1 }}>
+                  {skillName}
+                </span>
+              </div>
             </div>
+
+            {/* Score Badge */}
+            {totalScore >= 0 && (
+              <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 flex-shrink-0 bg-white" style={{ border: "1px solid rgba(216,114,51,0.2)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#D87233">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 900, color: "#D87233" }}>{totalScore.toLocaleString("ru")}</span>
+              </div>
+            )}
           </div>
 
-          {/* Score Badge */}
-          {totalScore >= 0 && (
-            <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 flex-shrink-0 bg-white" style={{ border: "1px solid rgba(216,114,51,0.2)" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="#D87233">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 900, color: "#D87233" }}>{totalScore.toLocaleString("ru")}</span>
+          {/* Progress Bar inside Top bar */}
+          {nextScore > 0 && (
+            <div className="w-full mt-2" style={{ padding: "0 4px" }}>
+              <div className="w-full rounded-full overflow-hidden relative" style={{ height: 6, background: "rgba(0,0,0,0.06)" }}>
+                <motion.div
+                  className="h-full rounded-full absolute left-0 top-0"
+                  animate={{ width: `${skillPct}%` }}
+                  transition={{ duration: 0.5 }}
+                  style={{ background: skillColor }}
+                />
+              </div>
             </div>
           )}
         </button>
