@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Menu, Pause, Play, Zap, Check, X, Plus, RefreshCcw } from "lucide-react";
 import { CharacterSVG } from "./CharacterSVG";
 import { FloatingSymbols } from "./FloatingSymbols";
+import { SoundManager } from "../../utils/SoundManager";
 
 const C = { purple: "#6272A4", orange: "#D87233", teal: "#5CA7AD" };
 const ROUND_SIZE = 5;
@@ -34,6 +35,7 @@ function getSkill(score: number) {
 
 // ─── Question Generator ───────────────────────────────────
 interface Question { a: number; b: number; op: "+" | "−"; result: number }
+interface RoundHistoryItem { a: number; b: number; op: string; result: number; answer: string; correct: boolean; time: number }
 
 const LEVEL_RANGES: Record<number, number[]> = {
   1: [],
@@ -151,12 +153,17 @@ function RoundResultIcon({ correct }: { correct: number }) {
 
 // ─── Round Complete ────────────────────────────────────────
 function RoundComplete({
-  correct, pointsEarned, totalScore, skill, hasNextLevel, onContinue, onNextLevel, onMenu,
+  correct, pointsEarned, totalScore, skill, hasNextLevel, history, onContinue, onNextLevel, onMenu,
 }: {
   correct: number; pointsEarned: number; totalScore: number;
-  skill: typeof SKILL_LEVELS[0]; hasNextLevel: boolean; onContinue: () => void; onNextLevel: () => void; onMenu: () => void;
+  skill: typeof SKILL_LEVELS[0]; hasNextLevel: boolean; history: RoundHistoryItem[]; onContinue: () => void; onNextLevel: () => void; onMenu: () => void;
 }) {
   const title = correct === ROUND_SIZE ? "Идеально!" : correct >= 3 ? "Отлично!" : "Продолжай!";
+
+  // Calculate Old and New Percentages for the EXP bar
+  const startScore = totalScore - pointsEarned;
+  const oldSkillData = getSkill(startScore);
+  const newSkillData = getSkill(totalScore);
 
   return (
     <motion.div
@@ -197,23 +204,58 @@ function RoundComplete({
           </div>
         </div>
         <div className="px-5 py-4 flex flex-col gap-2.5">
-          <StatRow label="Заработано:" right={
-            <div className="flex items-center gap-1.5">
-              <Zap size={16} color={C.orange} fill={C.orange} />
-              <span style={{ fontSize: 20, fontWeight: 900, color: C.orange }}>+{pointsEarned}</span>
+          {/* Animated Score Bar */}
+          <div className="bg-white rounded-2xl p-4 flex flex-col gap-3" style={{ border: "1px solid #EAECF3", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: 13, color: "#8A929E", fontWeight: 800 }}>Прогресс ранга</span>
+              <div className="flex items-center gap-1.5">
+                <Zap size={14} color={C.orange} fill={C.orange} />
+                <span style={{ fontSize: 16, fontWeight: 900, color: C.orange }}>+{pointsEarned}</span>
+              </div>
             </div>
-          } />
-          <StatRow label="Всего очков:" right={
-            <span style={{ fontSize: 16, fontWeight: 900, color: C.purple }}>{totalScore.toLocaleString("ru")}</span>
-          } />
-          <StatRow label="Звание:" right={
-            <div className="flex items-center gap-2">
-              <StarBadge num={skill.num} color={skill.color} />
-              <span style={{ fontSize: 15, fontWeight: 900, color: skill.color }}>{skill.name}</span>
+
+            <div className="flex items-center justify-between mt-1 mb-1">
+              <span style={{ fontSize: 14, fontWeight: 900, color: oldSkillData.current.color }}>{oldSkillData.current.name}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#2E3545" }}>{totalScore.toLocaleString("ru")} {(oldSkillData.next || newSkillData.next) ? `/ ${(oldSkillData.next || newSkillData.next)!.minScore.toLocaleString("ru")}` : ""}</span>
             </div>
-          } />
+
+            <div className="w-full rounded-full overflow-hidden relative bg-[#EEF1F7]" style={{ height: 10 }}>
+              {/* If rank up happened, we could do a complex animation, but for simplicity we animate to the new pct. 
+                  If we leveled up, the new pct might be lower than the old pct visually. */}
+              <motion.div
+                className="h-full rounded-full absolute left-0 top-0"
+                initial={{ width: `${oldSkillData.current.name !== newSkillData.current.name ? 0 : oldSkillData.pct}%` }}
+                animate={{ width: `${newSkillData.pct}%` }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+                style={{ background: newSkillData.current.color }}
+              />
+            </div>
+          </div>
         </div>
-        <div className="px-5 pb-5 flex flex-col gap-3">
+
+        {/* History Table */}
+        {history.length > 0 && (
+          <div className="px-5 pb-2">
+            <span style={{ fontSize: 13, color: "#8A929E", fontWeight: 800, marginLeft: 4 }}>История раунда:</span>
+            <div className="mt-2 flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+              {history.map((h, i) => (
+                <div key={i} className="flex items-center justify-between rounded-xl px-4 py-2.5" style={{ background: h.correct ? "rgba(76,175,80,0.08)" : "rgba(232,93,93,0.08)" }}>
+                  <div className="flex items-center gap-3">
+                    {h.correct ? <Check size={16} strokeWidth={3} color="#4CAF50" /> : <X size={16} strokeWidth={3} color="#E85D5D" />}
+                    <span style={{ fontSize: 16, fontWeight: 800, color: "#2E3545", letterSpacing: 0.5 }}>
+                      {h.a} {h.op} {h.b} = <span style={{ color: h.correct ? "#4CAF50" : "#E85D5D" }}>{h.answer || "?"}</span>
+                    </span>
+                  </div>
+                  {!h.correct && (
+                    <span style={{ fontSize: 14, fontWeight: 900, color: "#E85D5D" }}>({h.result})</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="px-5 pb-5 pt-3 flex flex-col gap-3">
           {hasNextLevel && (
             <button
               onClick={onNextLevel}
@@ -269,6 +311,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
   const [timer, setTimer] = useState(0);
   const [feedback, setFeedback] = useState<null | "correct" | "wrong">(null);
   const [correctCount, setCorrectCount] = useState(0);
+  const [history, setHistory] = useState<RoundHistoryItem[]>([]);
   const [showRound, setShowRound] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showPause, setShowPause] = useState(false);
@@ -287,6 +330,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
     setAnswer(""); setFeedback(null); setTimer(0);
     if (isLast) {
       setShowRound(true);
+      SoundManager.playRoundComplete();
       onRoundComplete(isPerfectRef.current);
     }
     else { setQIdx(n => n + 1); setQuestion(generateQuestion(levelId, range)); }
@@ -300,22 +344,38 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
       const ns = score + pts;
       setScore(ns); setCorrectCount(c => c + 1); onScoreUpdate(ns);
       onCorrectAnswer(timer <= 3);
+      if (qIdx < ROUND_SIZE - 1) SoundManager.playSuccess();
     } else {
       isPerfectRef.current = false;
       onWrongAnswer();
+      SoundManager.playError();
     }
+    setHistory(h => [...h, {
+      a: question.a, b: question.b, op: question.op, result: question.result,
+      answer, correct: isCorrect, time: timer
+    }]);
     setFeedback(isCorrect ? "correct" : "wrong");
     setTimeout(() => nextQ(qIdx === ROUND_SIZE - 1), isCorrect ? 550 : 1100);
   }, [answer, feedback, showRound, question.result, timer, levelId, score, onScoreUpdate, onCorrectAnswer, onWrongAnswer, qIdx, nextQ]);
 
-  const pushDigit = (d: string) => { if (!feedback && !showRound) setAnswer(a => a.length >= 5 ? a : a + d); };
-  const clearAnswer = () => { if (!feedback && !showRound) setAnswer(""); };
+  const pushDigit = (d: string) => {
+    if (!feedback && !showRound) {
+      SoundManager.playClick();
+      setAnswer(a => a.length >= 5 ? a : a + d);
+    }
+  };
+  const clearAnswer = () => {
+    if (!feedback && !showRound) {
+      SoundManager.playClick();
+      setAnswer("");
+    }
+  };
 
   const handleNewRound = () => {
     isPerfectRef.current = true;
     setQIdx(0); setQuestion(generateQuestion(levelId, range));
     setAnswer(""); setFeedback(null); setTimer(0);
-    setCorrectCount(0); setShowRound(false); setScoreAtStart(score);
+    setCorrectCount(0); setHistory([]); setShowRound(false); setScoreAtStart(score);
   };
 
   const { current: skill, next: nextSkill, pct } = getSkill(score);
@@ -618,6 +678,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
             totalScore={score}
             skill={skill}
             hasNextLevel={hasNextLevel}
+            history={history}
             onContinue={handleNewRound}
             onNextLevel={onNextLevel}
             onMenu={onBack}

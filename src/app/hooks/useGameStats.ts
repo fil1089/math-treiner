@@ -13,6 +13,11 @@ export interface GameStats {
   playerName: string;
   unlockedAchievements: number[];
   avatarId: number;
+  dailyQuest: {
+    date: string;
+    count: number;
+    claimed: boolean;
+  };
 }
 
 // ─── Persistence ─────────────────────────────────────────
@@ -30,18 +35,23 @@ const DEFAULTS: GameStats = {
   playerName: "Математик",
   unlockedAchievements: [],
   avatarId: 0,
+  dailyQuest: {
+    date: "",
+    count: 0,
+    claimed: false,
+  },
 };
 
 function load(): GameStats {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
-  } catch {}
+  } catch { }
   return { ...DEFAULTS };
 }
 
 function save(s: GameStats) {
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
+  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { }
 }
 
 // ─── Achievement definitions ──────────────────────────────
@@ -59,12 +69,12 @@ export const ACHIEVEMENT_CHECKS: { id: number; check: (s: GameStats) => boolean 
 
 export function getAchievementProgress(stats: GameStats, id: number) {
   switch (id) {
-    case 1: return { current: Math.min(stats.totalSolved, 1),   max: 1 };
-    case 2: return { current: Math.min(stats.totalSolved, 10),  max: 10 };
-    case 3: return { current: Math.min(stats.totalSolved, 50),  max: 50 };
+    case 1: return { current: Math.min(stats.totalSolved, 1), max: 1 };
+    case 2: return { current: Math.min(stats.totalSolved, 10), max: 10 };
+    case 3: return { current: Math.min(stats.totalSolved, 50), max: 50 };
     case 4: return { current: Math.min(stats.totalSolved, 100), max: 100 };
-    case 5: return { current: Math.min(stats.bestStreak, 10),   max: 10 };
-    case 6: return { current: Math.min(stats.bestStreak, 20),   max: 20 };
+    case 5: return { current: Math.min(stats.bestStreak, 10), max: 10 };
+    case 6: return { current: Math.min(stats.bestStreak, 20), max: 20 };
     case 7: return { current: Math.min(stats.quickAnswers, 10), max: 10 };
     case 8: return { current: Math.min(new Set(stats.levelsCompleted).size, 6), max: 6 };
     case 9: return { current: stats.perfectLevels.length > 0 ? 1 : 0, max: 1 };
@@ -99,14 +109,30 @@ export function useGameStats(onAchievementUnlocked?: (id: number) => void) {
   }, []);
 
   const recordCorrectAnswer = useCallback((isQuick: boolean) => {
-    apply(s => ({
-      ...s,
-      totalSolved:    s.totalSolved + 1,
-      currentStreak:  s.currentStreak + 1,
-      bestStreak:     Math.max(s.bestStreak, s.currentStreak + 1),
-      quickAnswers:   isQuick ? s.quickAnswers + 1 : s.quickAnswers,
-      hasPlayed:      true,
-    }));
+    const today = new Date().toISOString().split("T")[0];
+    apply(s => {
+      const q = s.dailyQuest || { date: "", count: 0, claimed: false };
+      let newCount = q.count;
+      let newClaimed = q.claimed;
+
+      if (q.date !== today) {
+        // Reset for a new day
+        newCount = 1;
+        newClaimed = false;
+      } else if (newCount < 20) {
+        newCount++;
+      }
+
+      return {
+        ...s,
+        totalSolved: s.totalSolved + 1,
+        currentStreak: s.currentStreak + 1,
+        bestStreak: Math.max(s.bestStreak, s.currentStreak + 1),
+        quickAnswers: isQuick ? s.quickAnswers + 1 : s.quickAnswers,
+        hasPlayed: true,
+        dailyQuest: { date: today, count: newCount, claimed: newClaimed },
+      };
+    });
   }, [apply]);
 
   const recordWrongAnswer = useCallback(() => {
@@ -137,9 +163,17 @@ export function useGameStats(onAchievementUnlocked?: (id: number) => void) {
     apply(s => ({ ...s, avatarId: id }));
   }, [apply]);
 
+  const claimDailyQuest = useCallback((rewardScore: number) => {
+    apply(s => ({
+      ...s,
+      totalScore: s.totalScore + rewardScore,
+      dailyQuest: { ...s.dailyQuest, claimed: true }
+    }));
+  }, [apply]);
+
   const resetStats = useCallback(() => {
     setStats({ ...DEFAULTS });
-    try { localStorage.removeItem(KEY); } catch {}
+    try { localStorage.removeItem(KEY); } catch { }
   }, []);
 
   return {
@@ -150,6 +184,7 @@ export function useGameStats(onAchievementUnlocked?: (id: number) => void) {
     updateScore,
     updatePlayerName,
     updateAvatarId,
+    claimDailyQuest,
     resetStats,
   };
 }

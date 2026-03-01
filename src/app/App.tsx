@@ -52,6 +52,7 @@ export default function App() {
     updatePlayerName,
     resetStats,
     updateAvatarId,
+    claimDailyQuest,
   } = useGameStats(handleAchievementUnlocked);
 
   const handleSelectLevel = (levelId: number, range: number) => {
@@ -143,6 +144,19 @@ export default function App() {
 
   const { current: skill, pct, next: nextSkill } = getSkillLevel(currentTotalScore);
 
+  const handleClaimDaily = () => {
+    claimDailyQuest(50); // The local hook gives +50
+    const newScore = currentTotalScore + 50;
+    if (user && token) {
+      updateUser({ total_score: newScore });
+      fetch('/api/auth/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ total_score: newScore })
+      }).catch(err => console.error("Failed to update daily quest score", err));
+    }
+  };
+
   return (
     <div
       className="flex items-center justify-center min-h-screen w-full"
@@ -164,6 +178,8 @@ export default function App() {
             skillNum={skill.num}
             skillPct={pct}
             nextScore={nextSkill ? nextSkill.minScore : 0}
+            dailyQuest={stats.dailyQuest}
+            onClaimDaily={handleClaimDaily}
           />
         )}
 

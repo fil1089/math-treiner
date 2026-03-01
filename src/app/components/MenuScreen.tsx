@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Play, RotateCcw, Trophy, User, Volume2, VolumeX } from "lucide-react";
+import { Play, RotateCcw, Trophy, User, Volume2, VolumeX, Target, Zap } from "lucide-react";
 import { LevitatingCharacter } from "./LevitatingCharacter";
 import { FloatingSymbols } from "./FloatingSymbols";
 import { AvatarIcon } from "./AvatarIcon";
+import { SoundManager } from "../../utils/SoundManager";
 
 const C = {
   purple: "#6272A4",
@@ -22,6 +23,8 @@ interface MenuScreenProps {
   skillNum?: number;
   skillPct?: number;
   nextScore?: number;
+  dailyQuest?: { date: string; count: number; claimed: boolean };
+  onClaimDaily?: () => void;
 }
 
 export function MenuScreen({
@@ -35,8 +38,14 @@ export function MenuScreen({
   skillNum = 1,
   skillPct = 0,
   nextScore = 0,
+  dailyQuest = { date: "", count: 0, claimed: false },
+  onClaimDaily,
 }: MenuScreenProps) {
-  const [soundOn, setSoundOn] = useState(true);
+  const [soundOn, setSoundOn] = useState(SoundManager.isEnabled());
+
+  const handleSoundToggle = () => {
+    setSoundOn(SoundManager.toggle());
+  };
 
   const buttons = [
     {
@@ -157,6 +166,54 @@ export function MenuScreen({
         </p>
       </div>
 
+      {/* Daily Quest */}
+      {!dailyQuest.claimed && (
+        <div className="px-6 w-full mb-5">
+          <div className="bg-white rounded-2xl p-4 flex flex-col gap-3" style={{ boxShadow: "0 6px 20px rgba(0,0,0,0.06)", border: "1px solid rgba(255,255,255,0.7)" }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 flex items-center justify-center rounded-xl" style={{ background: `${C.orange}15` }}>
+                  <Target size={16} strokeWidth={2.5} color={C.orange} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#8A929E", lineHeight: 1 }}>Задание дня</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: "#2E3545" }}>Реши 20 примеров</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <Zap size={14} color={C.orange} fill={C.orange} />
+                <span style={{ fontSize: 15, fontWeight: 900, color: C.orange }}>+50</span>
+              </div>
+            </div>
+
+            {dailyQuest.count >= 20 ? (
+              <button
+                onClick={onClaimDaily}
+                className="w-full py-2.5 rounded-xl flex items-center justify-center mt-1"
+                style={{ background: C.orange, color: "white", fontWeight: 800, border: "none", cursor: "pointer", boxShadow: `0 4px 10px ${C.orange}40` }}
+              >
+                Забрать награду
+              </button>
+            ) : (
+              <div className="w-full mt-1">
+                <div className="flex justify-between mb-1" style={{ fontSize: 11, fontWeight: 800, color: "#8A929E" }}>
+                  <span>Прогресс</span>
+                  <span>{dailyQuest.count} / 20</span>
+                </div>
+                <div className="w-full rounded-full h-2" style={{ background: "#EEF1F7" }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(dailyQuest.count / 20) * 100}%` }}
+                    className="h-full rounded-full"
+                    style={{ background: C.orange }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Buttons */}
       <div className="flex flex-col items-center gap-3 px-8 flex-1">
         {buttons.map((btn, idx) => (
@@ -210,7 +267,7 @@ export function MenuScreen({
 
         {/* Sound toggle */}
         <motion.button
-          onClick={() => setSoundOn(!soundOn)}
+          onClick={handleSoundToggle}
           whileTap={{ scale: 0.96 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
