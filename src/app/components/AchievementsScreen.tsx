@@ -15,6 +15,7 @@ import {
 } from "./icons/AchievementIcons";
 import { FloatingSymbols } from "./FloatingSymbols";
 import { type GameStats, getAchievementProgress } from "../hooks/useGameStats";
+import { AvatarIcon } from "./AvatarIcon";
 
 // ─── Palette ─────────────────────────────────────────────
 const C = {
@@ -345,10 +346,12 @@ function CategoryHeader({ cat, allItems }: { cat: Category; allItems: Achievemen
 export function AchievementsScreen({
   onBack,
   playerName = "Игрок",
+  avatarId = 0,
   stats,
 }: {
   onBack?: () => void;
   playerName?: string;
+  avatarId?: number;
   stats?: GameStats;
 }) {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -409,11 +412,8 @@ export function AchievementsScreen({
           className="flex items-center gap-3 rounded-2xl px-4 py-3"
           style={{ background: "rgba(255,255,255,0.55)", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
         >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `linear-gradient(135deg, ${C.teal}, #3D8F95)`, boxShadow: "0 3px 8px rgba(92,167,173,0.35)" }}
-          >
-            <span style={{ fontSize: 13, fontWeight: 900, color: "white" }}>{initials}</span>
+          <div className="flex-shrink-0">
+            <AvatarIcon id={avatarId} size={38} borderRadius={12} showShadow={false} />
           </div>
           <div>
             <p className="m-0" style={{ fontSize: 10, color: C.teal, fontWeight: 700, opacity: 0.8 }}>Игрок</p>

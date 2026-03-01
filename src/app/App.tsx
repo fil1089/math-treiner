@@ -205,6 +205,7 @@ export default function App() {
           <AchievementsScreen
             onBack={() => setScreen("menu")}
             playerName={currentName}
+            avatarId={currentAvatarId}
             stats={stats}
           />
         )}
