@@ -85,26 +85,41 @@ export function MenuScreen({
       <div className="absolute rounded-full pointer-events-none" style={{ width: 280, height: 280, background: "rgba(92,167,173,0.07)", top: -60, right: -80 }} />
       <div className="absolute rounded-full pointer-events-none" style={{ width: 180, height: 180, background: "rgba(216,114,51,0.06)", bottom: 100, left: -60 }} />
 
-      {/* Top bar */}
-      <div className="flex items-center justify-end px-5 pt-10 gap-2">
-        {playerName && (
-          <button
-            onClick={() => onNavigate("profile")}
-            className="flex items-center gap-2 rounded-xl px-2 py-1.5 active:scale-95 transition-transform"
-            style={{ background: "rgba(255,255,255,0.45)", border: "none", cursor: "pointer" }}
-          >
-            <AvatarIcon id={avatarId} size={28} borderRadius={8} showShadow={false} />
-            <span style={{ fontSize: 12, fontWeight: 800, color: "#6272A4" }}>{playerName}</span>
-          </button>
-        )}
-        {totalScore > 0 && (
-          <div className="flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.45)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#D87233">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-            <span style={{ fontSize: 13, fontWeight: 900, color: "#D87233" }}>{totalScore.toLocaleString("ru")}</span>
+      {/* Top bar (Combined User + Skill) */}
+      <div className="flex items-center justify-between px-5 pt-3 gap-2">
+        <button
+          onClick={() => onNavigate("profile")}
+          className="flex-1 flex items-center justify-between rounded-2xl p-2 active:scale-95 transition-transform"
+          style={{
+            background: "rgba(255,255,255,0.6)",
+            border: "1px solid rgba(255,255,255,0.8)",
+            boxShadow: `0 4px 12px rgba(98,114,164,0.08)`,
+            cursor: "pointer"
+          }}
+        >
+          {/* Avatar & Name */}
+          <div className="flex items-center gap-2.5">
+            <AvatarIcon id={avatarId} size={38} borderRadius={12} showShadow={false} />
+            <div className="flex flex-col items-start pr-2">
+              <span style={{ fontSize: 13, fontWeight: 900, color: C.purple, lineHeight: 1.1 }}>
+                {playerName || "Игрок"}
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: skillColor, marginTop: 1 }}>
+                {skillName}
+              </span>
+            </div>
           </div>
-        )}
+
+          {/* Score Badge */}
+          {totalScore >= 0 && (
+            <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 flex-shrink-0 bg-white" style={{ border: "1px solid rgba(216,114,51,0.2)" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#D87233">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              <span style={{ fontSize: 13, fontWeight: 900, color: "#D87233" }}>{totalScore.toLocaleString("ru")}</span>
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Character */}
@@ -112,46 +127,14 @@ export function MenuScreen({
         <LevitatingCharacter size={210} />
       </div>
 
-      {/* Title + skill badge */}
-      <div className="flex flex-col items-center mt-2 mb-6 px-6">
+      {/* Title */}
+      <div className="flex flex-col items-center mt-2 mb-8 px-6">
         <h1 className="m-0 text-center" style={{ fontSize: 36, fontWeight: 900, color: C.purple, letterSpacing: -1, lineHeight: 1.1 }}>
           Математика
         </h1>
         <p className="m-0 mt-1 text-center" style={{ fontSize: 13, color: C.teal, fontWeight: 700, opacity: 0.9 }}>
           Тренируй свой мозг каждый день!
         </p>
-
-        {/* Skill level badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", bounce: 0.4 }}
-          className="flex items-center gap-2 rounded-2xl px-4 py-2 mt-3"
-          style={{
-            background: "rgba(255,255,255,0.55)",
-            boxShadow: `0 3px 12px ${skillColor}30, inset 0 1px 0 rgba(255,255,255,0.8)`,
-            border: `1.5px solid ${skillColor}40`,
-          }}
-        >
-          {/* Star badge */}
-          <div className="relative flex items-center justify-center flex-shrink-0" style={{ width: 26, height: 26 }}>
-            <svg width="26" height="26" viewBox="0 0 30 30" fill="none">
-              <path
-                d="M15 3l2.83 6.17 6.84 0.93-4.97 4.72 1.16 6.68L15 18.27l-5.86 3.23 1.16-6.68L5.33 10.1l6.84-0.93L15 3z"
-                fill={skillColor} stroke={skillColor} strokeWidth="0.5"
-              />
-            </svg>
-            <span className="absolute" style={{ fontSize: 9, fontWeight: 900, color: "white", lineHeight: 1 }}>{skillNum}</span>
-          </div>
-          <div>
-            <p className="m-0" style={{ fontSize: 9, fontWeight: 700, color: "#9AA0AA", letterSpacing: 0.5, textTransform: "uppercase" }}>
-              Твой уровень
-            </p>
-            <p className="m-0" style={{ fontSize: 15, fontWeight: 900, color: skillColor, lineHeight: 1 }}>
-              {skillName}
-            </p>
-          </div>
-        </motion.div>
       </div>
 
       {/* Buttons */}
