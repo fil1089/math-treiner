@@ -9,6 +9,7 @@ import { AuthPage } from "./components/AuthPage";
 import { AchievementToast } from "./components/AchievementToast";
 import { useGameStats } from "./hooks/useGameStats";
 import { getSkillLevel } from "./utils/skillLevels";
+import { getDailyQuest } from "./utils/dailyQuests";
 
 type Screen = "menu" | "levelSelect" | "achievements" | "profile" | "game" | "auth";
 
@@ -147,8 +148,12 @@ export default function App() {
   const { current: skill, pct, next: nextSkill, blockedDesc } = getSkillLevel(currentTotalScore, stats.levelsCompleted);
 
   const handleClaimDaily = () => {
-    claimDailyQuest(50); // The local hook gives +50
-    const newScore = currentTotalScore + 50;
+    const today = new Date().toISOString().split("T")[0];
+    const quest = getDailyQuest(today);
+    const reward = quest.reward;
+
+    claimDailyQuest(reward);
+    const newScore = currentTotalScore + reward;
     if (user && token) {
       updateUser({ total_score: newScore });
       fetch('/api/auth/update', {

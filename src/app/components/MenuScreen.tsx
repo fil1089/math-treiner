@@ -5,6 +5,7 @@ import { LevitatingCharacter } from "./LevitatingCharacter";
 import { FloatingSymbols } from "./FloatingSymbols";
 import { AvatarIcon } from "./AvatarIcon";
 import { SoundManager } from "../../utils/SoundManager";
+import { getDailyQuest } from "../utils/dailyQuests";
 
 const C = {
   purple: "#6272A4",
@@ -189,16 +190,20 @@ export function MenuScreen({
                 </div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 800, color: "#8A929E", lineHeight: 1 }}>Задание дня</div>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: "#2E3545" }}>Реши 20 примеров</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: "#2E3545" }}>
+                    {getDailyQuest(dailyQuest.date || new Date().toISOString().split("T")[0]).description}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-1">
                 <Zap size={14} color={C.orange} fill={C.orange} />
-                <span style={{ fontSize: 15, fontWeight: 900, color: C.orange }}>+50</span>
+                <span style={{ fontSize: 15, fontWeight: 900, color: C.orange }}>
+                  +{getDailyQuest(dailyQuest.date || new Date().toISOString().split("T")[0]).reward}
+                </span>
               </div>
             </div>
 
-            {dailyQuest.count >= 20 ? (
+            {dailyQuest.count >= getDailyQuest(dailyQuest.date || new Date().toISOString().split("T")[0]).target ? (
               <button
                 onClick={onClaimDaily}
                 className="w-full py-2.5 rounded-xl flex items-center justify-center mt-1"
@@ -210,12 +215,12 @@ export function MenuScreen({
               <div className="w-full mt-1">
                 <div className="flex justify-between mb-1" style={{ fontSize: 11, fontWeight: 800, color: "#8A929E" }}>
                   <span>Прогресс</span>
-                  <span>{dailyQuest.count} / 20</span>
+                  <span>{dailyQuest.count} / {getDailyQuest(dailyQuest.date || new Date().toISOString().split("T")[0]).target}</span>
                 </div>
                 <div className="w-full rounded-full h-2" style={{ background: "#EEF1F7" }}>
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${(dailyQuest.count / 20) * 100}%` }}
+                    animate={{ width: `${(dailyQuest.count / getDailyQuest(dailyQuest.date || new Date().toISOString().split("T")[0]).target) * 100}%` }}
                     className="h-full rounded-full"
                     style={{ background: C.orange }}
                   />

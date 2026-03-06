@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { getDailyQuest } from "../utils/dailyQuests";
 
 // ─── Types ───────────────────────────────────────────────
 export interface GameStats {
@@ -112,15 +113,25 @@ export function useGameStats(onAchievementUnlocked?: (id: number) => void) {
     const today = new Date().toISOString().split("T")[0];
     apply(s => {
       const q = s.dailyQuest || { date: "", count: 0, claimed: false };
+      const currentQuest = getDailyQuest(today);
+
       let newCount = q.count;
       let newClaimed = q.claimed;
 
       if (q.date !== today) {
         // Reset for a new day
-        newCount = 1;
+        newCount = 0;
         newClaimed = false;
-      } else if (newCount < 20) {
-        newCount++;
+
+        // Check if current action contributes to new quest
+        if (currentQuest.type === "solved") newCount = 1;
+        if (currentQuest.type === "quick" && isQuick) newCount = 1;
+      } else {
+        if (currentQuest.type === "solved") {
+          if (newCount < currentQuest.target) newCount++;
+        } else if (currentQuest.type === "quick" && isQuick) {
+          if (newCount < currentQuest.target) newCount++;
+        }
       }
 
       return {
@@ -140,15 +151,32 @@ export function useGameStats(onAchievementUnlocked?: (id: number) => void) {
   }, [apply]);
 
   const recordRoundComplete = useCallback((levelId: number, isPerfect: boolean) => {
-    apply(s => ({
-      ...s,
-      levelsCompleted: s.levelsCompleted.includes(levelId)
-        ? s.levelsCompleted
-        : [...s.levelsCompleted, levelId],
-      perfectLevels: isPerfect && !s.perfectLevels.includes(levelId)
-        ? [...s.perfectLevels, levelId]
-        : s.perfectLevels,
-    }));
+    const today = new Date().toISOString().split("T")[0];
+    apply(s => {
+      const q = s.dailyQuest || { date: "", count: 0, claimed: false };
+      const currentQuest = getDailyQuest(today);
+
+      let newCount = q.count;
+      let newClaimed = q.claimed;
+
+      if (q.date !== today) {
+        newCount = (isPerfect && currentQuest.type === "perfect") ? 1 : 0;
+        newClaimed = false;
+      } else if (isPerfect && currentQuest.type === "perfect") {
+        if (newCount < currentQuest.target) newCount++;
+      }
+
+      return {
+        ...s,
+        levelsCompleted: s.levelsCompleted.includes(levelId)
+          ? s.levelsCompleted
+          : [...s.levelsCompleted, levelId],
+        perfectLevels: isPerfect && !s.perfectLevels.includes(levelId)
+          ? [...s.perfectLevels, levelId]
+          : s.perfectLevels,
+        dailyQuest: { date: today, count: newCount, claimed: newClaimed }
+      };
+    });
   }, [apply]);
 
   const updateScore = useCallback((newScore: number) => {
