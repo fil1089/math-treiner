@@ -10,7 +10,7 @@ import { getSkillLevel, SkillLevel } from "../utils/skillLevels";
 const C = { purple: "#6272A4", orange: "#D87233", teal: "#5CA7AD" };
 
 function getRoundSize(levelId: number, opType: "sum" | "mult" = "sum") {
-  if (opType === "mult") return levelId === 10 ? 20 : 10;
+  if (opType === "mult") return levelId === 10 ? 20 : 8;
   switch (levelId) {
     case 1: return 5;
     case 2: return 10;
@@ -39,22 +39,6 @@ function generateQuestion(levelId: number, rangeInput: number, opType: "sum" | "
   const rand = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
 
-  if (opType === "mult") {
-    // Multiplication logic:
-    // levelId corresponds to the times table (2-9), or 10 for mix 1-9
-    let a, b;
-    if (levelId === 10) {
-      a = rand(2, 9);
-      b = rand(2, 9);
-    } else {
-      a = levelId;
-      b = rand(2, 9);
-      // Randomly swap a and b for variety (e.g. 5x2 vs 2x5)
-      if (Math.random() > 0.5) [a, b] = [b, a];
-    }
-    return { a, b, op: "×", result: a * b };
-  }
-
   // Sum / Sub logic
   let activeRange = rangeInput;
   if (rangeInput === -1) {
@@ -77,6 +61,37 @@ function generateQuestion(levelId: number, rangeInput: number, opType: "sum" | "
   }
   if (op === "−" && a < b) [a, b] = [b, a];
   return { a, b, op, result: op === "+" ? a + b : a - b };
+}
+
+function generateRoundQuestions(levelId: number, rangeInput: number, opType: "sum" | "mult" = "sum", roundSize: number): Question[] {
+  if (opType === "sum") {
+    return Array.from({ length: roundSize }).map(() => generateQuestion(levelId, rangeInput, opType));
+  }
+
+  // Multiplication
+  let questions: Question[] = [];
+  if (levelId === 10) { // MIX
+    const allOpt: Question[] = [];
+    for (let a = 2; a <= 9; a++) {
+      for (let b = 2; b <= 9; b++) {
+        allOpt.push({ a, b, op: "×", result: a * b });
+      }
+    }
+    allOpt.sort(() => Math.random() - 0.5);
+    questions = allOpt.slice(0, roundSize);
+  } else {
+    // Specific table: exactly 8 questions (x2 to x9)
+    for (let b = 2; b <= 9; b++) {
+      let a = levelId;
+      let bVal = b;
+      // Randomly swap a and b for variety (e.g. 5x2 vs 2x5)
+      if (Math.random() > 0.5) [a, bVal] = [bVal, a];
+      questions.push({ a, b: bVal, op: "×", result: a * bVal });
+    }
+    // Shuffle the 8 questions
+    questions.sort(() => Math.random() - 0.5);
+  }
+  return questions;
 }
 
 function calcPoints(seconds: number, levelId: number) {
@@ -334,7 +349,7 @@ export function GameScreen({ levelId, operation = "sum", levelName, range, total
   const [score, setScore] = useState(totalScore);
   const [answer, setAnswer] = useState("");
   const [qIdx, setQIdx] = useState(0);
-  const [question, setQuestion] = useState<Question>(() => generateQuestion(levelId, range, operation));
+  const [questions, setQuestions] = useState<Question[]>(() => generateRoundQuestions(levelId, range, operation, roundSize));
   const [timer, setTimer] = useState(0);
   const [feedback, setFeedback] = useState<null | "correct" | "wrong">(null);
   const [correctCount, setCorrectCount] = useState(0);
@@ -360,12 +375,13 @@ export function GameScreen({ levelId, operation = "sum", levelName, range, total
       SoundManager.playRoundComplete();
       onRoundComplete(isPerfectRef.current);
     }
-    else { setQIdx(n => n + 1); setQuestion(generateQuestion(levelId, range, operation)); }
-  }, [levelId, range, operation, onRoundComplete]);
+    else { setQIdx(n => n + 1); }
+  }, [onRoundComplete]);
 
   const handleOK = useCallback(() => {
     if (!answer || feedback || showRound) return;
-    const isCorrect = parseInt(answer, 10) === question.result;
+    const currentQ = questions[qIdx];
+    const isCorrect = parseInt(answer, 10) === currentQ.result;
     if (isCorrect) {
       const pts = calcPoints(timer, levelId);
       const ns = score + pts;
@@ -378,12 +394,12 @@ export function GameScreen({ levelId, operation = "sum", levelName, range, total
       SoundManager.playError();
     }
     setHistory(h => [...h, {
-      a: question.a, b: question.b, op: question.op, result: question.result,
+      a: currentQ.a, b: currentQ.b, op: currentQ.op, result: currentQ.result,
       answer, correct: isCorrect, time: timer
     }]);
     setFeedback(isCorrect ? "correct" : "wrong");
     setTimeout(() => nextQ(qIdx === roundSize - 1), isCorrect ? 550 : 1100);
-  }, [answer, feedback, showRound, question.result, timer, levelId, score, onScoreUpdate, onCorrectAnswer, onWrongAnswer, qIdx, nextQ, roundSize]);
+  }, [answer, feedback, showRound, questions, qIdx, timer, levelId, score, onScoreUpdate, onCorrectAnswer, onWrongAnswer, nextQ, roundSize]);
 
   const pushDigit = (d: string) => {
     if (!feedback && !showRound) {
@@ -400,13 +416,14 @@ export function GameScreen({ levelId, operation = "sum", levelName, range, total
 
   const handleNewRound = () => {
     isPerfectRef.current = true;
-    setQIdx(0); setQuestion(generateQuestion(levelId, range, operation));
+    setQIdx(0); setQuestions(generateRoundQuestions(levelId, range, operation, roundSize));
     setAnswer(""); setFeedback(null); setTimer(0);
     setCorrectCount(0); setHistory([]); setShowRound(false); setScoreAtStart(score);
   };
 
   const { current: skill, next: nextSkill, pct } = getSkillLevel(score, levelsCompleted);
   const timerDanger = timer > 20;
+  const question = questions[qIdx];
 
   return (
     <div
