@@ -21,6 +21,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("menu");
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [selectedRange, setSelectedRange] = useState(9);
+  const [selectedOp, setSelectedOp] = useState<"sum" | "mult">("sum");
 
   // Keep track of whether a game is in progress (to enable "Continue")
   const [gameStarted, setGameStarted] = useState(false);
@@ -55,17 +56,18 @@ export default function App() {
     claimDailyQuest,
   } = useGameStats(handleAchievementUnlocked);
 
-  const handleSelectLevel = (levelId: number, range: number) => {
+  const handleSelectLevel = (levelId: number, range: number, op: "sum" | "mult" = "sum") => {
     setSelectedLevel(levelId);
     setSelectedRange(range);
+    setSelectedOp(op);
     setGameKey(k => k + 1); // reset game state
     setGameStarted(true);
     setScreen("game");
   };
 
   const handleNextLevel = () => {
-    if (selectedLevel < 6) {
-      handleSelectLevel(selectedLevel + 1, -1); // Use mix range (-1) for automatically started next levels
+    if (selectedLevel < 6 && selectedOp === "sum") {
+      handleSelectLevel(selectedLevel + 1, -1, "sum"); // Use mix range (-1) for automatically started next levels
     }
   };
 
@@ -142,7 +144,7 @@ export default function App() {
     }
   };
 
-  const { current: skill, pct, next: nextSkill } = getSkillLevel(currentTotalScore);
+  const { current: skill, pct, next: nextSkill, blockedDesc } = getSkillLevel(currentTotalScore, stats.levelsCompleted);
 
   const handleClaimDaily = () => {
     claimDailyQuest(50); // The local hook gives +50
@@ -178,6 +180,7 @@ export default function App() {
             skillNum={skill.num}
             skillPct={pct}
             nextScore={nextSkill ? nextSkill.minScore : 0}
+            blockedDesc={blockedDesc}
             dailyQuest={stats.dailyQuest}
             onClaimDaily={handleClaimDaily}
           />
@@ -203,15 +206,17 @@ export default function App() {
             <GameScreen
               key={gameKey}
               levelId={selectedLevel}
+              operation={selectedOp}
               levelName={LEVEL_NAMES[selectedLevel] ?? "Уровень"}
               range={selectedRange}
               totalScore={currentTotalScore}
+              levelsCompleted={stats.levelsCompleted}
               onBack={() => setScreen("menu")}
               onScoreUpdate={handleScoreUpdate}
               onCorrectAnswer={recordCorrectAnswer}
               onWrongAnswer={recordWrongAnswer}
               onRoundComplete={(isPerfect) => recordRoundComplete(selectedLevel, isPerfect)}
-              hasNextLevel={selectedLevel < 6}
+              hasNextLevel={selectedLevel < 6 && selectedOp === "sum"}
               onNextLevel={handleNextLevel}
             />
           </div>
@@ -234,10 +239,14 @@ export default function App() {
             onNameChange={handleNameChange}
             onLogin={() => setScreen("auth")}
             onLogout={logout}
-            onReset={handleReset}
+            onReset={() => {
+              resetStats();
+              setScreen("menu");
+            }}
             totalStars={currentTotalScore}
-            totalAchievements={unlockedCount}
-            avatarId={currentAvatarId}
+            totalAchievements={stats.unlockedAchievements.length}
+            levelsCompleted={stats.levelsCompleted}
+            avatarId={stats.avatarId}
             onAvatarChange={handleAvatarChange}
           />
         )}

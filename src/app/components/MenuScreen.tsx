@@ -23,6 +23,7 @@ interface MenuScreenProps {
   skillNum?: number;
   skillPct?: number;
   nextScore?: number;
+  blockedDesc?: string | null;
   dailyQuest?: { date: string; count: number; claimed: boolean };
   onClaimDaily?: () => void;
 }
@@ -38,6 +39,7 @@ export function MenuScreen({
   skillNum = 1,
   skillPct = 0,
   nextScore = 0,
+  blockedDesc = null,
   dailyQuest = { date: "", count: 0, claimed: false },
   onClaimDaily,
 }: MenuScreenProps) {
@@ -137,7 +139,17 @@ export function MenuScreen({
 
           {/* Progress Bar inside Top bar */}
           {nextScore > 0 && (
-            <div className="w-full mt-2" style={{ padding: "0 4px" }}>
+            <div className="w-full mt-2 flex flex-col gap-1.5" style={{ padding: "0 4px" }}>
+              {(blockedDesc || skillPct > 0) && (
+                <div className="flex justify-between items-center px-1">
+                  <span style={{ fontSize: 10, fontWeight: 800, color: blockedDesc ? "#E85D5D" : "#8A929E" }}>
+                    {blockedDesc ? `Пройди: ${blockedDesc}` : `До ${nextScore.toLocaleString("ru")}`}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: blockedDesc ? "#E85D5D" : "#8A929E" }}>
+                    {Math.floor(skillPct)}%
+                  </span>
+                </div>
+              )}
               <div className="w-full rounded-full overflow-hidden relative" style={{ height: 6, background: "rgba(0,0,0,0.06)" }}>
                 <motion.div
                   className="h-full rounded-full absolute left-0 top-0"

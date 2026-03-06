@@ -29,6 +29,18 @@ const levels: LevelConfig[] = [
   { id: 6, label: "Уровень 6", name: "Гений", stars: 5, color: C.orange, shadow: "rgba(216,114,51,0.50)", ranges: [2000, 5000, 9999], rangeLabel: "до" },
 ];
 
+const multLevels: LevelConfig[] = [
+  { id: 2, label: "Умножение", name: "на 2", stars: 1, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 3, label: "Умножение", name: "на 3", stars: 1, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 4, label: "Умножение", name: "на 4", stars: 2, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 5, label: "Умножение", name: "на 5", stars: 2, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 6, label: "Умножение", name: "на 6", stars: 3, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 7, label: "Умножение", name: "на 7", stars: 3, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 8, label: "Умножение", name: "на 8", stars: 4, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 9, label: "Умножение", name: "на 9", stars: 4, color: "#9B59B6", shadow: "rgba(155,89,182,0.45)", ranges: [], rangeLabel: "" },
+  { id: 10, label: "Микс", name: "1-9", stars: 5, color: C.orange, shadow: "rgba(216,114,51,0.50)", ranges: [], rangeLabel: "" },
+];
+
 function StarRow({ count, total = 5 }: { count: number; total?: number }) {
   return (
     <div className="flex gap-0.5 justify-center">
@@ -48,19 +60,28 @@ function StarRow({ count, total = 5 }: { count: number; total?: number }) {
 
 interface LevelSelectScreenProps {
   onBack: () => void;
-  onSelectLevel: (levelId: number, range: number) => void;
+  onSelectLevel: (levelId: number, range: number, operation?: "sum" | "mult") => void;
 }
 
 export function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenProps) {
+  const [tab, setTab] = useState<"sum" | "mult">("sum");
   const [activeLevelId, setActiveLevelId] = useState<number | null>(null);
   const [selectedRange, setSelectedRange] = useState<number | null>(null);
 
-  const activeLevel = levels.find(l => l.id === activeLevelId) ?? null;
+  const activeLevelList = tab === "sum" ? levels : multLevels;
+  const activeLevel = activeLevelList.find(l => l.id === activeLevelId) ?? null;
 
   const handleLevelTap = (level: LevelConfig) => {
+    if (tab === "mult") {
+      // Multiplication uses levelId as the target number (range is passed as -1, levelId represents the table)
+      // If it's mix (id 10), pass range -1 and levelId 10
+      onSelectLevel(level.id, -1, "mult");
+      return;
+    }
+
     if (level.ranges.length === 0) {
       // Level 1: start immediately
-      onSelectLevel(level.id, 9);
+      onSelectLevel(level.id, 9, "sum");
     } else {
       setActiveLevelId(level.id);
       setSelectedRange(null);
@@ -69,7 +90,7 @@ export function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenPr
 
   const handlePlay = () => {
     if (!activeLevelId || !selectedRange) return;
-    onSelectLevel(activeLevelId, selectedRange);
+    onSelectLevel(activeLevelId, selectedRange, "sum");
   };
 
   return (
@@ -105,58 +126,91 @@ export function LevelSelectScreen({ onBack, onSelectLevel }: LevelSelectScreenPr
       </div>
 
       {/* Character */}
-      <div className="flex justify-center pt-1 pb-2">
-        <LevitatingCharacter size={150} />
+      <div className="flex justify-center pt-1 pb-1">
+        <LevitatingCharacter size={140} />
       </div>
 
-      {/* Hint */}
-      <p className="m-0 text-center px-6 mb-4" style={{ fontSize: 13, color: C.teal, fontWeight: 700 }}>
-        Выбери уровень и начинай!
-      </p>
-
-      {/* Level grid */}
-      <div className="px-5 flex-1">
-        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-          {levels.map((level, idx) => {
-            const isActive = activeLevelId === level.id;
-            return (
-              <motion.button
-                key={level.id}
-                initial={{ opacity: 0, y: 16, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: idx * 0.055, duration: 0.28, ease: "easeOut" }}
-                whileTap={{ scale: 0.93 }}
-                onClick={() => handleLevelTap(level)}
-                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl relative overflow-hidden"
-                style={{
-                  background: isActive
-                    ? `linear-gradient(145deg, ${level.color} 0%, ${level.color}BB 100%)`
-                    : `linear-gradient(145deg, ${level.color}CC 0%, ${level.color}99 100%)`,
-                  boxShadow: isActive
-                    ? `0 8px 24px ${level.shadow}, inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 3px white`
-                    : `0 5px 14px ${level.shadow}, inset 0 1px 0 rgba(255,255,255,0.2)`,
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "14px 8px 12px",
-                  aspectRatio: "1 / 1",
-                  transition: "box-shadow 0.2s, transform 0.2s",
-                }}
-              >
-                <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
-                {level.id === 6 && (
-                  <div className="absolute top-2 right-2.5">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                      <path d="M3 17l3-8 5 5 5-5 3 8H3z" fill="rgba(255,255,255,0.5)" />
-                    </svg>
-                  </div>
-                )}
-                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.8)", fontWeight: 700, letterSpacing: 0.2 }}>{level.label}</span>
-                <span style={{ fontSize: 18, color: "white", fontWeight: 900, lineHeight: 1 }}>{level.name}</span>
-                <StarRow count={level.stars} />
-              </motion.button>
-            );
-          })}
+      {/* Mode Tabs */}
+      <div className="px-5 mb-4">
+        <div className="flex p-1 rounded-2xl" style={{ background: "rgba(255,255,255,0.4)" }}>
+          <button
+            onClick={() => setTab("sum")}
+            className="flex-1 py-2.5 rounded-xl font-bold text-[13px] transition-all"
+            style={{
+              background: tab === "sum" ? "white" : "transparent",
+              color: tab === "sum" ? C.purple : "#6B7A8D",
+              boxShadow: tab === "sum" ? "0 4px 12px rgba(0,0,0,0.06)" : "none",
+            }}
+          >
+            Сложение и Вычитание
+          </button>
+          <button
+            onClick={() => setTab("mult")}
+            className="flex-1 py-2.5 rounded-xl font-bold text-[13px] transition-all"
+            style={{
+              background: tab === "mult" ? "white" : "transparent",
+              color: tab === "mult" ? "#9B59B6" : "#6B7A8D",
+              boxShadow: tab === "mult" ? "0 4px 12px rgba(0,0,0,0.06)" : "none",
+            }}
+          >
+            Таблица Умножения
+          </button>
         </div>
+      </div>
+
+      {/* Grid */}
+      <div className="px-5 flex-1 pb-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, x: tab === "sum" ? -20 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tab === "sum" ? 20 : -20 }}
+            transition={{ duration: 0.2 }}
+            className="grid gap-3"
+            style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+          >
+            {activeLevelList.map((level, idx) => {
+              const isActive = activeLevelId === level.id;
+              return (
+                <motion.button
+                  key={level.id}
+                  initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: idx * 0.055, duration: 0.28, ease: "easeOut" }}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => handleLevelTap(level)}
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl relative overflow-hidden"
+                  style={{
+                    background: isActive
+                      ? `linear-gradient(145deg, ${level.color} 0%, ${level.color}BB 100%)`
+                      : `linear-gradient(145deg, ${level.color}CC 0%, ${level.color}99 100%)`,
+                    boxShadow: isActive
+                      ? `0 8px 24px ${level.shadow}, inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 3px white`
+                      : `0 5px 14px ${level.shadow}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "14px 8px 12px",
+                    aspectRatio: "1 / 1",
+                    transition: "box-shadow 0.2s, transform 0.2s",
+                  }}
+                >
+                  <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+                  {level.id === 6 && (
+                    <div className="absolute top-2 right-2.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 17l3-8 5 5 5-5 3 8H3z" fill="rgba(255,255,255,0.5)" />
+                      </svg>
+                    </div>
+                  )}
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.8)", fontWeight: 700, letterSpacing: 0.2 }}>{level.label}</span>
+                  <span style={{ fontSize: 18, color: "white", fontWeight: 900, lineHeight: 1 }}>{level.name}</span>
+                  <StarRow count={level.stars} />
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
 
         {/* Tip */}
         <motion.div

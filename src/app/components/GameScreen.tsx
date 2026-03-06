@@ -5,36 +5,25 @@ import { CharacterSVG } from "./CharacterSVG";
 import { FloatingSymbols } from "./FloatingSymbols";
 import { SoundManager } from "../../utils/SoundManager";
 
+import { getSkillLevel, SkillLevel } from "../utils/skillLevels";
+
 const C = { purple: "#6272A4", orange: "#D87233", teal: "#5CA7AD" };
-const ROUND_SIZE = 5;
 
-// ─── Skill Levels ─────────────────────────────────────────
-const SKILL_LEVELS = [
-  { name: "Новичок", minScore: 0, color: "#9AA0AA", num: 1 },
-  { name: "Начинающий", minScore: 50, color: "#4CAF50", num: 2 },
-  { name: "Соображайка", minScore: 200, color: C.teal, num: 3 },
-  { name: "Умник", minScore: 500, color: C.purple, num: 4 },
-  { name: "Мастер", minScore: 1000, color: C.orange, num: 5 },
-  { name: "Профи", minScore: 2000, color: "#E85D5D", num: 6 },
-  { name: "Эксперт", minScore: 4000, color: "#9B59B6", num: 7 },
-  { name: "Гений", minScore: 8000, color: "#D4A017", num: 8 },
-];
-
-function getSkill(score: number) {
-  let idx = 0;
-  for (let i = 0; i < SKILL_LEVELS.length; i++) {
-    if (score >= SKILL_LEVELS[i].minScore) idx = i;
+function getRoundSize(levelId: number, opType: "sum" | "mult" = "sum") {
+  if (opType === "mult") return levelId === 10 ? 20 : 10;
+  switch (levelId) {
+    case 1: return 5;
+    case 2: return 10;
+    case 3: return 15;
+    case 4: return 20;
+    case 5: return 25;
+    case 6: return 30;
+    default: return 5;
   }
-  const current = SKILL_LEVELS[idx];
-  const next = idx + 1 < SKILL_LEVELS.length ? SKILL_LEVELS[idx + 1] : null;
-  const pct = next
-    ? ((score - current.minScore) / (next.minScore - current.minScore)) * 100
-    : 100;
-  return { current, next, pct: Math.min(pct, 100) };
 }
 
 // ─── Question Generator ───────────────────────────────────
-interface Question { a: number; b: number; op: "+" | "−"; result: number }
+interface Question { a: number; b: number; op: "+" | "−" | "×"; result: number }
 interface RoundHistoryItem { a: number; b: number; op: string; result: number; answer: string; correct: boolean; time: number }
 
 const LEVEL_RANGES: Record<number, number[]> = {
@@ -46,10 +35,27 @@ const LEVEL_RANGES: Record<number, number[]> = {
   6: [2000, 5000, 9999],
 };
 
-function generateQuestion(levelId: number, rangeInput: number): Question {
+function generateQuestion(levelId: number, rangeInput: number, opType: "sum" | "mult" = "sum"): Question {
   const rand = (min: number, max: number) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
 
+  if (opType === "mult") {
+    // Multiplication logic:
+    // levelId corresponds to the times table (2-9), or 10 for mix 1-9
+    let a, b;
+    if (levelId === 10) {
+      a = rand(2, 9);
+      b = rand(2, 9);
+    } else {
+      a = levelId;
+      b = rand(2, 9);
+      // Randomly swap a and b for variety (e.g. 5x2 vs 2x5)
+      if (Math.random() > 0.5) [a, b] = [b, a];
+    }
+    return { a, b, op: "×", result: a * b };
+  }
+
+  // Sum / Sub logic
   let activeRange = rangeInput;
   if (rangeInput === -1) {
     const opts = LEVEL_RANGES[levelId];
@@ -141,11 +147,11 @@ function StatRow({ label, right }: { label: string; right: React.ReactNode }) {
 }
 
 // ─── Round Result Icon ────────────────────────────────────
-function RoundResultIcon({ correct }: { correct: number }) {
-  if (correct === ROUND_SIZE) {
+function RoundResultIcon({ correct, roundSize }: { correct: number; roundSize: number }) {
+  if (correct === roundSize) {
     return <img src="/icons/star-struck-svgrepo-com.svg" width="64" height="64" alt="Идеально" />;
   }
-  if (correct >= 3) {
+  if (correct >= Math.floor(roundSize * 0.6)) {
     return <img src="/icons/smiling-face-with-sunglasses-svgrepo-com.svg" width="64" height="64" alt="Отлично" />;
   }
   return <img src="/icons/upside-down-face-svgrepo-com.svg" width="64" height="64" alt="Продолжай" />;
@@ -153,17 +159,19 @@ function RoundResultIcon({ correct }: { correct: number }) {
 
 // ─── Round Complete ────────────────────────────────────────
 function RoundComplete({
-  correct, pointsEarned, totalScore, skill, hasNextLevel, history, onContinue, onNextLevel, onMenu,
+  correct, pointsEarned, totalScore, levelsCompleted, skill, hasNextLevel, history, roundSize, onContinue, onNextLevel, onMenu,
 }: {
-  correct: number; pointsEarned: number; totalScore: number;
-  skill: typeof SKILL_LEVELS[0]; hasNextLevel: boolean; history: RoundHistoryItem[]; onContinue: () => void; onNextLevel: () => void; onMenu: () => void;
+  correct: number; pointsEarned: number; totalScore: number; levelsCompleted: number[];
+  skill: SkillLevel; hasNextLevel: boolean; history: RoundHistoryItem[]; roundSize: number; onContinue: () => void; onNextLevel: () => void; onMenu: () => void;
 }) {
-  const title = correct === ROUND_SIZE ? "Идеально!" : correct >= 3 ? "Отлично!" : "Продолжай!";
+  const title = correct === roundSize ? "Идеально!" : correct >= Math.floor(roundSize * 0.6) ? "Отлично!" : "Продолжай!";
 
   // Calculate Old and New Percentages for the EXP bar
   const startScore = totalScore - pointsEarned;
-  const oldSkillData = getSkill(startScore);
-  const newSkillData = getSkill(totalScore);
+  const oldSkillData = getSkillLevel(startScore, levelsCompleted);
+  const newSkillData = getSkillLevel(totalScore, levelsCompleted);
+
+  const [showHistory, setShowHistory] = useState(false);
 
   return (
     <motion.div
@@ -187,15 +195,15 @@ function RoundComplete({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", bounce: 0.5, delay: 0.15 }}
           >
-            <RoundResultIcon correct={correct} />
+            <RoundResultIcon correct={correct} roundSize={roundSize} />
           </motion.div>
           <p className="m-0 text-white" style={{ fontSize: 22, fontWeight: 900 }}>{title}</p>
           <p className="m-0 text-white" style={{ fontSize: 13, opacity: 0.85 }}>
-            {correct} из {ROUND_SIZE} правильных ответов
+            {correct} из {roundSize} правильных ответов
           </p>
-          <div className="flex gap-2 mt-2">
-            {Array.from({ length: ROUND_SIZE }).map((_, i) => (
-              <svg key={i} width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <div className="flex gap-1.5 mt-2 flex-wrap justify-center w-full max-w-[85%]">
+            {Array.from({ length: roundSize }).map((_, i) => (
+              <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l7.1-1.01L12 2z"
                   fill={i < correct ? "#FFD233" : "rgba(255,255,255,0.3)"}
                   stroke={i < correct ? "#E8B800" : "rgba(255,255,255,0.2)"} strokeWidth="1" />
@@ -233,25 +241,40 @@ function RoundComplete({
           </div>
         </div>
 
-        {/* History Table */}
+        {/* History Table or Toggle Button */}
         {history.length > 0 && (
           <div className="px-5 pb-2">
-            <span style={{ fontSize: 13, color: "#8A929E", fontWeight: 800, marginLeft: 4 }}>История раунда:</span>
-            <div className="mt-2 flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
-              {history.map((h, i) => (
-                <div key={i} className="flex items-center justify-between rounded-xl px-4 py-2.5" style={{ background: h.correct ? "rgba(76,175,80,0.08)" : "rgba(232,93,93,0.08)" }}>
-                  <div className="flex items-center gap-3">
-                    {h.correct ? <Check size={16} strokeWidth={3} color="#4CAF50" /> : <X size={16} strokeWidth={3} color="#E85D5D" />}
-                    <span style={{ fontSize: 16, fontWeight: 800, color: "#2E3545", letterSpacing: 0.5 }}>
-                      {h.a} {h.op} {h.b} = <span style={{ color: h.correct ? "#4CAF50" : "#E85D5D" }}>{h.answer || "?"}</span>
-                    </span>
-                  </div>
-                  {!h.correct && (
-                    <span style={{ fontSize: 14, fontWeight: 900, color: "#E85D5D" }}>({h.result})</span>
-                  )}
+            {!showHistory ? (
+              <button
+                onClick={() => setShowHistory(true)}
+                className="w-full rounded-2xl py-3 flex items-center justify-center gap-2"
+                style={{ background: "#F2F4F8", border: "1.5px solid #EAECF3", cursor: "pointer", fontSize: 14, fontWeight: 800, color: "#6B7A8D", fontFamily: "'Nunito', sans-serif" }}
+              >
+                Посмотреть примеры
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9l6 6 6-6" stroke="#6B7A8D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                <span style={{ fontSize: 13, color: "#8A929E", fontWeight: 800, marginLeft: 4 }}>История раунда:</span>
+                <div className="mt-2 flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+                  {history.map((h, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-xl px-4 py-2.5" style={{ background: h.correct ? "rgba(76,175,80,0.08)" : "rgba(232,93,93,0.08)" }}>
+                      <div className="flex items-center gap-3">
+                        {h.correct ? <Check size={16} strokeWidth={3} color="#4CAF50" /> : <X size={16} strokeWidth={3} color="#E85D5D" />}
+                        <span style={{ fontSize: 16, fontWeight: 800, color: "#2E3545", letterSpacing: 0.5 }}>
+                          {h.a} {h.op} {h.b} = <span style={{ color: h.correct ? "#4CAF50" : "#E85D5D" }}>{h.answer || "?"}</span>
+                        </span>
+                      </div>
+                      {!h.correct && (
+                        <span style={{ fontSize: 14, fontWeight: 900, color: "#E85D5D" }}>({h.result})</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </motion.div>
+            )}
           </div>
         )}
 
@@ -291,9 +314,11 @@ function RoundComplete({
 // ─── MAIN ─────────────────────────────────────────────────
 interface GameScreenProps {
   levelId: number;
+  operation?: "sum" | "mult";
   levelName: string;
   range: number;
   totalScore: number;
+  levelsCompleted: number[];
   onBack: () => void;
   onScoreUpdate: (s: number) => void;
   onCorrectAnswer: (isQuick: boolean) => void;
@@ -303,11 +328,13 @@ interface GameScreenProps {
   onNextLevel: () => void;
 }
 
-export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel, onBack, onScoreUpdate, onCorrectAnswer, onWrongAnswer, onRoundComplete, onNextLevel }: GameScreenProps) {
+export function GameScreen({ levelId, operation = "sum", levelName, range, totalScore, levelsCompleted, hasNextLevel, onBack, onScoreUpdate, onCorrectAnswer, onWrongAnswer, onRoundComplete, onNextLevel }: GameScreenProps) {
+  const roundSize = getRoundSize(levelId, operation);
+
   const [score, setScore] = useState(totalScore);
   const [answer, setAnswer] = useState("");
   const [qIdx, setQIdx] = useState(0);
-  const [question, setQuestion] = useState<Question>(() => generateQuestion(levelId, range));
+  const [question, setQuestion] = useState<Question>(() => generateQuestion(levelId, range, operation));
   const [timer, setTimer] = useState(0);
   const [feedback, setFeedback] = useState<null | "correct" | "wrong">(null);
   const [correctCount, setCorrectCount] = useState(0);
@@ -333,8 +360,8 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
       SoundManager.playRoundComplete();
       onRoundComplete(isPerfectRef.current);
     }
-    else { setQIdx(n => n + 1); setQuestion(generateQuestion(levelId, range)); }
-  }, [levelId, range, onRoundComplete]);
+    else { setQIdx(n => n + 1); setQuestion(generateQuestion(levelId, range, operation)); }
+  }, [levelId, range, operation, onRoundComplete]);
 
   const handleOK = useCallback(() => {
     if (!answer || feedback || showRound) return;
@@ -344,7 +371,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
       const ns = score + pts;
       setScore(ns); setCorrectCount(c => c + 1); onScoreUpdate(ns);
       onCorrectAnswer(timer <= 3);
-      if (qIdx < ROUND_SIZE - 1) SoundManager.playSuccess();
+      if (qIdx < roundSize - 1) SoundManager.playSuccess();
     } else {
       isPerfectRef.current = false;
       onWrongAnswer();
@@ -355,8 +382,8 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
       answer, correct: isCorrect, time: timer
     }]);
     setFeedback(isCorrect ? "correct" : "wrong");
-    setTimeout(() => nextQ(qIdx === ROUND_SIZE - 1), isCorrect ? 550 : 1100);
-  }, [answer, feedback, showRound, question.result, timer, levelId, score, onScoreUpdate, onCorrectAnswer, onWrongAnswer, qIdx, nextQ]);
+    setTimeout(() => nextQ(qIdx === roundSize - 1), isCorrect ? 550 : 1100);
+  }, [answer, feedback, showRound, question.result, timer, levelId, score, onScoreUpdate, onCorrectAnswer, onWrongAnswer, qIdx, nextQ, roundSize]);
 
   const pushDigit = (d: string) => {
     if (!feedback && !showRound) {
@@ -373,12 +400,12 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
 
   const handleNewRound = () => {
     isPerfectRef.current = true;
-    setQIdx(0); setQuestion(generateQuestion(levelId, range));
+    setQIdx(0); setQuestion(generateQuestion(levelId, range, operation));
     setAnswer(""); setFeedback(null); setTimer(0);
     setCorrectCount(0); setHistory([]); setShowRound(false); setScoreAtStart(score);
   };
 
-  const { current: skill, next: nextSkill, pct } = getSkill(score);
+  const { current: skill, next: nextSkill, pct } = getSkillLevel(score, levelsCompleted);
   const timerDanger = timer > 20;
 
   return (
@@ -506,25 +533,25 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
         {/* Bottom Row: Dots | Timer | Level Info */}
         <div className="flex items-center justify-between mt-2 pt-1">
           {/* Left side group: Dots + Timer */}
-          <div className="flex items-center gap-4 flex-1">
+          <div className="flex items-center gap-4 flex-1 overflow-hidden">
             {/* Dots */}
-            <div className="flex items-center gap-2">
-              {Array.from({ length: ROUND_SIZE }).map((_, i) => (
+            <div className="flex items-center gap-1.5 flex-1 flex-wrap pl-1 max-w-[60%]">
+              {Array.from({ length: roundSize }).map((_, i) => (
                 <motion.div
                   key={i}
                   animate={{
-                    width: i === qIdx ? 22 : 9,
+                    width: i === qIdx ? 16 : 6,
                     background: i < qIdx ? C.teal : i === qIdx ? C.orange : "#D8DCE9",
                   }}
                   transition={{ duration: 0.22 }}
                   className="rounded-full"
-                  style={{ height: 9, flexShrink: 0 }}
+                  style={{ height: 6, flexShrink: 0 }}
                 />
               ))}
             </div>
 
             {/* Timer (shifted left) */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-xl" style={{ background: timerDanger ? `${C.orange}15` : "transparent" }}>
+            <div className="flex items-center justify-end gap-2 px-1 py-1 rounded-xl flex-shrink-0" style={{ background: timerDanger ? `${C.orange}15` : "transparent" }}>
               {timerDanger && (
                 <motion.div
                   animate={{ opacity: [1, 0.2, 1] }}
@@ -535,7 +562,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
               )}
               <span
                 style={{
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: 900,
                   color: timerDanger ? "#E85D5D" : "#B0B6C4",
                   fontVariantNumeric: "tabular-nums",
@@ -544,8 +571,8 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
               >
                 {fmtTime(timer)}
               </span>
-              <span style={{ fontSize: 15, fontWeight: 900, color: "#8A929E", marginLeft: 2 }}>
-                {qIdx + 1}/{ROUND_SIZE}
+              <span style={{ fontSize: 13, fontWeight: 900, color: "#8A929E" }}>
+                {qIdx + 1}/{roundSize}
               </span>
             </div>
           </div>
@@ -555,10 +582,10 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
             <div className="rounded-lg px-2 py-0.5" style={{ background: `${C.teal}18` }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: C.teal }}>{levelName}</span>
             </div>
-            {range !== 0 && range !== 9 && (
+            {range !== 0 && range !== 9 && range !== -1 && operation === "sum" && (
               <div className="rounded-lg px-2 py-0.5" style={{ background: `${C.orange}15` }}>
                 <span style={{ fontSize: 10, fontWeight: 800, color: C.orange }}>
-                  {range === -1 ? "Микс" : `до ${range.toLocaleString("ru")}`}
+                  до {range.toLocaleString("ru")}
                 </span>
               </div>
             )}
@@ -570,28 +597,11 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
           CHARACTER — fills remaining space
       ══════════════════════════════════════════════════ */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center relative py-2">
-        <motion.div
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-full h-full flex flex-col items-center justify-center pointer-events-none p-4"
-        >
-          <div className="flex-1 min-h-0 flex items-center justify-center w-full" style={{ maxHeight: "35vh", transform: "scale(1.15)" }}>
+        <div className="w-full h-full flex flex-col items-center justify-center pointer-events-none p-4">
+          <div className="flex-1 min-h-0 flex items-center justify-center w-full" style={{ maxHeight: "35vh", transform: "scale(1.45)" }}>
             <CharacterSVG size="100%" />
           </div>
-          {/* Shadow */}
-          <motion.div
-            animate={{ scaleX: [1, 0.75, 1], opacity: [0.35, 0.15, 0.35] }}
-            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-            style={{
-              width: "min(100px, 15vh)",
-              height: "min(14px, 2vh)",
-              background: "radial-gradient(ellipse, rgba(60,140,150,0.4) 0%, transparent 75%)",
-              borderRadius: "50%",
-              flexShrink: 0,
-              marginTop: 2
-            }}
-          />
-        </motion.div>
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════
@@ -643,7 +653,7 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
                 <div className="text-center">
                   <p className="m-0" style={{ fontSize: 24, fontWeight: 900, color: C.purple }}>Пауза</p>
                   <p className="m-0 mt-1" style={{ fontSize: 12, color: "#9AA0AA", fontWeight: 700 }}>
-                    Вопрос {qIdx + 1} из {ROUND_SIZE} · {score.toLocaleString("ru")} очков
+                    Вопрос {qIdx + 1} из {roundSize} · {score.toLocaleString("ru")} очков
                   </p>
                 </div>
                 <button
@@ -676,9 +686,11 @@ export function GameScreen({ levelId, levelName, range, totalScore, hasNextLevel
             correct={correctCount}
             pointsEarned={score - scoreAtStart}
             totalScore={score}
+            levelsCompleted={levelsCompleted}
             skill={skill}
             hasNextLevel={hasNextLevel}
             history={history}
+            roundSize={roundSize}
             onContinue={handleNewRound}
             onNextLevel={onNextLevel}
             onMenu={onBack}

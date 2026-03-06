@@ -5,6 +5,7 @@ import { LevitatingCharacter } from "./LevitatingCharacter";
 import { FloatingSymbols } from "./FloatingSymbols";
 import { AvatarIcon } from "./AvatarIcon";
 import { AvatarPicker } from "./AvatarPicker";
+import { SKILL_LEVELS, getSkillLevel } from "../utils/skillLevels";
 
 const C = {
   purple: "#6272A4",
@@ -23,6 +24,7 @@ interface ProfileScreenProps {
   onReset: () => void;
   totalStars: number;
   totalAchievements: number;
+  levelsCompleted: number[];
   avatarId?: number;
   onAvatarChange?: (id: number) => void;
 }
@@ -37,6 +39,7 @@ export function ProfileScreen({
   onReset,
   totalStars,
   totalAchievements,
+  levelsCompleted,
   avatarId = 0,
   onAvatarChange,
 }: ProfileScreenProps) {
@@ -62,6 +65,8 @@ export function ProfileScreen({
     }
     setEditing(false);
   };
+
+  const currentSkillData = getSkillLevel(totalStars, levelsCompleted);
 
   const handleCancelEdit = () => {
     setDraftName(playerName);
@@ -243,12 +248,72 @@ export function ProfileScreen({
           </div>
         </motion.div>
 
+        {/* Ranks Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.09 }}
+          className="flex flex-col gap-2 mt-2"
+        >
+          <p className="m-0 px-1" style={{ fontSize: 11, fontWeight: 800, color: C.purple, opacity: 0.5, textTransform: "uppercase", letterSpacing: 1 }}>
+            Все звания
+          </p>
+          <div className="flex flex-col gap-2 rounded-2xl p-2" style={{ background: "rgba(255,255,255,0.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 10px rgba(0,0,0,0.06)" }}>
+            {SKILL_LEVELS.map((lvl, i) => {
+              const hasPoints = totalStars >= lvl.minScore;
+              const hasLevel = !lvl.reqLevelId || levelsCompleted.includes(lvl.reqLevelId);
+              const isUnlocked = hasPoints && hasLevel;
+              const isCurrent = currentSkillData.idx === i;
+              const isNext = currentSkillData.idx + 1 === i;
+
+              return (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl relative overflow-hidden" style={{
+                  background: isCurrent ? "white" : "rgba(255,255,255,0.6)",
+                  boxShadow: isCurrent ? `0 4px 12px ${lvl.color}30, inset 0 0 0 2px ${lvl.color}` : "none",
+                  opacity: isUnlocked || isNext ? 1 : 0.65
+                }}>
+                  {/* Check mark for unlocked ranks */}
+                  {isUnlocked && !isCurrent && (
+                    <div className="absolute top-2 right-2 opacity-30">
+                      <Check size={14} color={lvl.color} strokeWidth={3} />
+                    </div>
+                  )}
+
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${lvl.color}15` }}>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: lvl.color }}>{lvl.num}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="m-0" style={{ fontSize: 15, fontWeight: 900, color: isUnlocked || isNext ? lvl.color : "#8A929E" }}>{lvl.name}</p>
+                      {isCurrent && (
+                        <span className="px-1.5 py-0.5 rounded-md" style={{ background: lvl.color, color: "white", fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }}>Твой ранг</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-0.5 mt-0.5" style={{ fontSize: 11, fontWeight: 700, color: "#8A929E" }}>
+                      <span className={hasPoints ? "text-[#4CAF50]" : ""}>
+                        {hasPoints && <Check size={10} className="inline mr-1" />}
+                        {lvl.minScore.toLocaleString("ru")} очков
+                      </span>
+                      {lvl.reqLevelDesc && (
+                        <span className={hasLevel ? "text-[#4CAF50]" : isNext && hasPoints && !hasLevel ? "text-[#E85D5D]" : ""}>
+                          {hasLevel && <Check size={10} className="inline mr-1" />}
+                          Пройти: {lvl.reqLevelDesc}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </motion.div>
+
         {/* Actions */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.12 }}
-          className="flex flex-col gap-2"
+          className="flex flex-col gap-2 mt-4"
         >
           {/* Section label */}
           <p className="m-0 px-1" style={{ fontSize: 11, fontWeight: 800, color: C.purple, opacity: 0.5, textTransform: "uppercase", letterSpacing: 1 }}>
